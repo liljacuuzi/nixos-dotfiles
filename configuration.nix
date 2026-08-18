@@ -74,7 +74,10 @@
   # };
 
   # Enable touchpad support (enabled default in most desktopManager).
-  # services.libinput.enable = true;
+   services.libinput = {
+     enable = true;
+     touchpad.middleEmulation = true;
+   };
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
     users.users.smalldog = {
@@ -97,6 +100,7 @@
       git
       xclip
       bat
+      brightnessctl
     ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -113,8 +117,8 @@
   # services.openssh.enable = true;
 
   # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ ... ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
+  networking.firewall.allowedTCPPorts = [ 53317 ];
+  networking.firewall.allowedUDPPorts = [ 53317 ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 

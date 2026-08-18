@@ -16,7 +16,7 @@ in
         enable = true;
         shellAliases = {
           btw = "echo i use nixos btw";
-          nrs = "sudo nixos-rebuild switch";
+          nrs = "sudo nixos-rebuild switch --flake ~/nixos-dotfiles#nixos-laptop";
           nrsu = "sudo nixos-rebuild switch --upgrade";
           sncgd = "sudo nix-collect-garbage -d";
           ncg = "nix-collect-garbage";
@@ -30,7 +30,6 @@ in
       home.packages = with pkgs; [
         bat
         rofi
-        prismlauncher
         localsend
       ];
      xdg.configFile = builtins.mapAttrs (name: subpath: {

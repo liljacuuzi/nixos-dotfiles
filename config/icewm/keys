@@ -23,5 +23,7 @@ key "Super+Alt+Down" icesh -f restore sizeto 100% 50% left bottom
 # Maximize / Restore Toggle
 key "Super+Alt+x" sh -c "if icesh -f -a getStates | grep -q Maximized; then icesh -f restore; else icesh -f maximize; fi"
 
+key "Super+space" rofi -show drun
+
 
 

@@ -1,24 +1,27 @@
-# Launch a terminal with Super+Enter
+# Launch a terminal
 key "Ctrl+Alt+t" xterm
 
-# Launch a browser with Ctrl+Alt+B
+# Launch a browser
 key "Ctrl+Alt+b" firefox
 
-# Take a screenshot with PrintScreen
+# Take a screenshot
 key "Print" maim ~/screenshot.png
 
 
-# Move/Tile Window to Left Half (Restores first if maximized)
-key "Super+Alt+Left" icesh -f unmaximize sizeto 50% 100% top left
+# Move/Tile Window to Left Half
+key "Super+Alt+Left" icesh -f restore sizeto 50% 100% left top
 
 # Move/Tile Window to Right Half
-key "Super+Alt+Right" icesh -f unmaximize sizeto 50% 100% top right
+key "Super+Alt+Right" icesh -f restore sizeto 50% 100% right top
 
 # Move/Tile Window to Top Half
-key "Super+Alt+Up" icesh -f unmaximize sizeto 100% 50% top left
+key "Super+Alt+Up" icesh -f restore sizeto 100% 50% left top
 
 # Move/Tile Window to Bottom Half
-key "Super+Alt+Down" icesh -f unmaximize sizeto 100% 50% bottom left
+key "Super+Alt+Down" icesh -f restore sizeto 100% 50% left bottom
 
-# Maximize / Restore Toggle (Explicit action call)
-key "Super+Alt+x" icesh -f maximize
+# Maximize / Restore Toggle
+key "Super+Alt+x" sh -c "if icesh -f -a getStates | grep -q Maximized; then icesh -f restore; else icesh -f maximize; fi"
+
+
+

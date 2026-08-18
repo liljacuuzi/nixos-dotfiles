@@ -1,7 +1,13 @@
-  { config, pkgs, ... }: {
-    
-  
-    
+{ config, pkgs, ... }: 
+let
+  dotfiles = "${config.home.homeDirectory}/nixos-dotfiles/config";
+  create_symlink = path: config.lib.file.mkOutOfStoreSymlink path;
+  configs = {
+    icewm = "icewm";
+    rofi = "rofi";
+  };
+in
+    {
       home.username = "smalldog";
       home.homeDirectory = "/home/smalldog";
       home.stateVersion = "26.05";
@@ -23,9 +29,12 @@
     
       home.packages = with pkgs; [
         bat
+        rofi
       ];
-   
-     home.file.".icewm".source = config.lib.file.mkOutOfStoreSymlink "/home/smalldog/nixos-dotfiles/icewm";
+     xdg.configFile = builtins.mapAttrs (name: subpath: {
+       source = create_symlink "${dotfiles}/${subpath}";
+       recursive = true;
+     }) configs;
    
    
    

@@ -50,9 +50,11 @@ in
      
      
      # symlink ~/.config to ~/nixos-dotfiles/config/ 
-     xdg.configFile = builtins.mapAttrs (name: subpath: {
-       source = create_symlink "${dotfiles}/${subpath}";
-     }) configs;
+     # xdg.configFile = builtins.mapAttrs (name: subpath: {
+     #  source = create_symlink "${dotfiles}/${subpath}";
+     #}) configs;
+     xdg.configFile."icewm".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-dotfiles/config/icewm";
+     xdg.configFile."rofi".source  = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-dotfiles/config/rofi";
    
    programs.firefox = {
   enable = true;

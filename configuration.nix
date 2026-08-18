@@ -78,6 +78,9 @@
      enable = true;
      touchpad.middleEmulation = true;
    };
+  
+  # fixing bug with not being able to write to files in home directory
+  security.polkit.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
     users.users.smalldog = {
@@ -89,6 +92,10 @@
     };
 
   programs.firefox.enable = true;
+  
+  # Virtual filesystem support (trash, USB mounting, network shares)
+  services.gvfs.enable = true;
+  services.udisks2.enable = true;
 
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
@@ -101,8 +108,12 @@
       xclip
       bat
       brightnessctl
+      # required for notifications
       dunst
       libnotify
+      # required for pcmanfm-qt
+      lxmenu-data
+      shared-mime-info
     ];
 
   # Some programs need SUID wrappers, can be configured further or are

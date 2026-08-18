@@ -35,10 +35,23 @@ in
         bat
         rofi
         localsend
+        # required for pcmanfm-qt
+        pcmanfm-qt
       ];
+     
+     # Set pcmanfm-qt as the default file manager for directories
+     xdg.mimeApps = {
+       enable = true;
+       defaultApplications = {
+         "inode/directory" = [ "pcmanfm-qt.desktop" ];
+       };
+     };
+     
+     
+     
+     # symlink ~/.config to ~/nixos-dotfiles/config/ 
      xdg.configFile = builtins.mapAttrs (name: subpath: {
        source = create_symlink "${dotfiles}/${subpath}";
-       recursive = true;
      }) configs;
    
    programs.firefox = {

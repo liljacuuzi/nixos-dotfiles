@@ -16,10 +16,10 @@
         ./configuration.nix
         home-manager.nixosModules.home-manager
         {
-          useGlobalPkgs = true;
-          useUserPackages = true;
-          users.smalldog = import ./home.nix;
-          backupFileExtension = "backup";
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.users.smalldog = import ./home.nix;
+          home-manager.backupFileExtension = "backup";
         }
       ];
     };

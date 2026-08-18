@@ -8,6 +8,9 @@ let
   };
 in
     {
+      imports = [
+        ./brightness-volume-notify.nix
+      ];
       home.username = "smalldog";
       home.homeDirectory = "/home/smalldog";
       home.stateVersion = "26.05";

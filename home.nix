@@ -30,6 +30,8 @@ in
       home.packages = with pkgs; [
         bat
         rofi
+        prismlauncher
+        localsend
       ];
      xdg.configFile = builtins.mapAttrs (name: subpath: {
        source = create_symlink "${dotfiles}/${subpath}";

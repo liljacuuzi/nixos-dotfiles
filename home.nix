@@ -9,7 +9,8 @@ let
 in
     {
       imports = [
-        ./brightness-volume-notify.nix
+        ./scripts/brightness-volume-notify.nix
+        ./modules/suckless.nix
       ];
       home.username = "smalldog";
       home.homeDirectory = "/home/smalldog";
@@ -40,7 +41,24 @@ in
        recursive = true;
      }) configs;
    
-   
+   programs.firefox = {
+  enable = true;
+  profiles.myprofile = {
+    settings = {
+      # GPU & Hardware Acceleration
+      "gfx.webrender.all" = true;
+      "media.ffmpeg.vaapi.enabled" = true;
+      "dom.webgpu.enabled" = true;
+
+      # Performance Tweaks
+      "network.dns.disablePrefetch" = false;
+      "gfx.webrender.vsync.disabled" = true;
+      
+      # Video decoding optimizations
+      "media.hardware-video-decoding.enabled" = true;
+    };
+  };
+};
    
    
      # automatic git signing

@@ -105,9 +105,12 @@
       xterm
       featherpad
       git
-      xclip
       bat
       brightnessctl
+      # copy/pasting text and screenshots
+      xclip
+      slop
+      maim
       # required for notifications
       dunst
       libnotify

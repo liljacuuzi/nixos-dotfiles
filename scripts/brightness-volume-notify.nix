@@ -1,11 +1,12 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 let
-  # Declarative script for Volume notifications
+  dotfilesKeysPath = "${config.home.homeDirectory}/nixos-dotfiles/config/icewm/keys";
+
+  # Volume notification package
   volume-notify = pkgs.writeShellApplication {
     name = "volume-notify";
 
-    # Automatically pulls dependencies into PATH
     runtimeInputs = with pkgs; [
       wireplumber
       gawk
@@ -47,7 +48,7 @@ let
     '';
   };
 
-  # Declarative script for Brightness notifications
+  # Brightness notification package
   brightness-notify = pkgs.writeShellApplication {
     name = "brightness-notify";
 
@@ -60,10 +61,10 @@ let
     text = ''
       case "''${1:-}" in
         up)
-          brightnessctl set 10%+
+          brightnessctl set +5%
           ;;
         down)
-          brightnessctl set 10%-
+          brightnessctl set 5%-
           ;;
         *)
           echo "Usage: brightness-notify {up|down}"
@@ -81,14 +82,14 @@ let
   };
 in
 {
-  # Add the generated scripts to user PATH so IceWM can execute them directly
+  # Add binaries to user PATH
   home.packages = [
     volume-notify
     brightness-notify
   ];
 
-  # IceWM Keybindings referencing the script binaries directly from PATH
-  home.file.".icewm/keys" = {
+  # Targets the keys file INSIDE your nixos-dotfiles repository directory
+  home.file."${dotfilesKeysPath}" = {
     text = ''
       # Volume keys
       key "XF86AudioRaiseVolume" volume-notify up

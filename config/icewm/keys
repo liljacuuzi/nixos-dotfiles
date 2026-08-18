@@ -1,1 +1,8 @@
-/nix/store/sdk0qpl1llp057146xabb3ga6id458x0-home-manager-files/nixos-dotfiles/config/icewm/keys
+# Volume keys
+key "XF86AudioRaiseVolume" volume-notify up
+key "XF86AudioLowerVolume" volume-notify down
+key "XF86AudioMute"        volume-notify mute
+
+# Brightness keys
+key "XF86MonBrightnessDown" brightness-notify down
+key "XF86MonBrightnessUp"   brightness-notify up

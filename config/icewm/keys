@@ -27,10 +27,10 @@ key "Super+Alt+x" sh -c "if icesh -f -a getStates | grep -q Maximized; then ices
 key "Super+space" rofi -show drun
 
 # Volume keys
-key "XF86AudioRaiseVolume" wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+
-key "XF86AudioLowerVolume" wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
-key "XF86AudioMute" wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+key "XF86AudioRaiseVolume" sh -c "volume-notify up"
+key "XF86AudioLowerVolume" sh -c "volume-notify down"
+key "XF86AudioMute"        sh -c "volume-notify mute"
 
 # Brightness keys
-key "XF86MonBrightnessDown" brightnessctl set 10%-
-key "XF86MonBrightnessUp" brightnessctl set 10%+
+key "XF86MonBrightnessDown" sh -c "brightness-notify down"
+key "XF86MonBrightnessUp"   sh -c "brightness-notify up"

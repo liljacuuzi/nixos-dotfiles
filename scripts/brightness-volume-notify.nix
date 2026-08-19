@@ -1,8 +1,6 @@
 { config, pkgs, ... }:
 
 let
-  dotfilesKeysPath = "${config.home.homeDirectory}/nixos-dotfiles/config/icewm/keys";
-
   # Volume notification package
   volume-notify = pkgs.writeShellApplication {
     name = "volume-notify";
@@ -87,18 +85,4 @@ in
     volume-notify
     brightness-notify
   ];
-
-  # Targets the keys file INSIDE your nixos-dotfiles repository directory
-  home.file."${dotfilesKeysPath}" = {
-    text = ''
-      # Volume keys
-      key "XF86AudioRaiseVolume" volume-notify up
-      key "XF86AudioLowerVolume" volume-notify down
-      key "XF86AudioMute"        volume-notify mute
-
-      # Brightness keys
-      key "XF86MonBrightnessDown" brightness-notify down
-      key "XF86MonBrightnessUp"   brightness-notify up
-    '';
-  };
 }

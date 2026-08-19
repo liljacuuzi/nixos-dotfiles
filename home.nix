@@ -5,6 +5,7 @@ let
   configs = {
     icewm = "icewm";
     rofi = "rofi";
+    pcmanfm-qt = "pcmanfm-qt";
   };
 in
     {
@@ -49,11 +50,12 @@ in
      
      
      
-     # symlink ~/.config to ~/nixos-dotfiles/config/ 
-     # xdg.configFile = builtins.mapAttrs (name: subpath: {
-     #  source = create_symlink "${dotfiles}/${subpath}";
-     #}) configs;
-     xdg.configFile."icewm".source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-dotfiles/config/icewm";
+     symlink ~/.config to ~/nixos-dotfiles/config/ 
+     xdg.configFile = builtins.mapAttrs (name: subpath: {
+     source = create_symlink "${dotfiles}/${subpath}";
+       recursive = true;
+     }) configs;
+     
      xdg.configFile."rofi".source  = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-dotfiles/config/rofi";
    
    programs.firefox = {

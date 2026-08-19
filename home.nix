@@ -6,12 +6,12 @@ let
     icewm = "icewm";
     rofi = "rofi";
     pcmanfm-qt = "pcmanfm-qt";
+    alacritty = "alacritty";
   };
 in
     {
       imports = [
         ./scripts/brightness-volume-notify.nix
-        ./modules/suckless.nix
       ];
       home.username = "smalldog";
       home.homeDirectory = "/home/smalldog";
@@ -50,13 +50,12 @@ in
      
      
      
-     symlink ~/.config to ~/nixos-dotfiles/config/ 
+     # symlink ~/.config to ~/nixos-dotfiles/config/ 
      xdg.configFile = builtins.mapAttrs (name: subpath: {
      source = create_symlink "${dotfiles}/${subpath}";
        recursive = true;
      }) configs;
      
-     xdg.configFile."rofi".source  = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/nixos-dotfiles/config/rofi";
    
    programs.firefox = {
   enable = true;

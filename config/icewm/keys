@@ -1,5 +1,5 @@
 # Launch a terminal
-key "Ctrl+Alt+t" xterm
+key "Ctrl+Alt+t" alacritty
 
 # Launch a browser
 key "Ctrl+Alt+b" firefox

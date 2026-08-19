@@ -7,11 +7,14 @@ let
     rofi = "rofi";
     pcmanfm-qt = "pcmanfm-qt";
     alacritty = "alacritty";
+    nvim = "nvim";
+    picom = "picom";
   };
 in
     {
       imports = [
-        ./scripts/brightness-volume-notify.nix
+        ./scripts/notify.nix
+        ./modules/neovim.nix
       ];
       home.username = "smalldog";
       home.homeDirectory = "/home/smalldog";
@@ -25,6 +28,11 @@ in
           nrsu = "sudo nixos-rebuild switch --upgrade";
           sncgd = "sudo nix-collect-garbage -d";
           ncg = "nix-collect-garbage";
+          
+
+          # restore nvim shellAliases
+          vi = "nvim";
+          vim = "nvim";
         };
       
         initExtra = ''
@@ -53,7 +61,6 @@ in
      # symlink ~/.config to ~/nixos-dotfiles/config/ 
      xdg.configFile = builtins.mapAttrs (name: subpath: {
      source = create_symlink "${dotfiles}/${subpath}";
-       recursive = true;
      }) configs;
      
    

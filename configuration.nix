@@ -56,6 +56,12 @@
     windowManager.icewm.enable = true;
   };
 
+
+  # Enable picom services
+  services.picom = {
+    enable = true;
+  };
+
   
 
   # Configure keymap in X11
@@ -108,6 +114,7 @@
       bat
       brightnessctl
       alacritty
+      picom
       # copy/pasting text and screenshots
       xclip
       slop

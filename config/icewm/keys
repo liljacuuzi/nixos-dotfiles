@@ -34,3 +34,19 @@ key "XF86AudioMute"        sh -c "volume-notify mute"
 # Brightness keys
 key "XF86MonBrightnessDown" sh -c "brightness-notify down"
 key "XF86MonBrightnessUp"   sh -c "brightness-notify up"
+
+# Opacity keys (with Dunst notifications)
+key "Super+bracketright" sh -c "opacity-notify up"
+key "Super+bracketleft" sh -c "opacity-notify down"
+
+# Selection to Clipboard (Drag region with slop)
+key "Print" exec sh -c "maim -s | xclip -selection clipboard -t image/png"
+
+# Selection to File (Saved with timestamp)
+key "Ctrl+Print" exec sh -c "mkdir -p ~/Pictures/Screenshots && maim -s ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"
+
+# Full Screen to Clipboard
+key "Alt+p" exec sh -c "maim | xclip -selection clipboard -t image/png"
+
+# Full Screen to File
+key "Shift+Print" exec sh -c "mkdir -p ~/Pictures/Screenshots && maim ~/Pictures/Screenshots/$(date +%Y-%m-%d_%H-%M-%S).png"

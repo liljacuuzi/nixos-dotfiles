@@ -26,4 +26,6 @@ configuration{
     kb-move-char-forward: "Control+f";
     kb-mode-complete: "Control+o";
 }
-@theme "tokyonight.rasi"
+
+
+@theme "/nix/store/qbcx260q2yjvf08cg504zhx9p25qvxz5-rofi-2.0.0/share/rofi/themes/material.rasi"

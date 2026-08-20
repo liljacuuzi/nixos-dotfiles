@@ -53,7 +53,8 @@
     enable = true;
 
     displayManager.lightdm.enable = true; # Login manager
-    windowManager.icewm.enable = true;
+    windowManager.awesome.enable = true;
+    windowManager.oxwm.enable = true;
   };
 
 
@@ -143,6 +144,10 @@
   # Open ports in the firewall.
   networking.firewall.allowedTCPPorts = [ 53317 ];
   networking.firewall.allowedUDPPorts = [ 53317 ];
+  
+  fonts.packages = with pkgs; [
+    nerd-fonts.jetbrains-mono
+  ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 

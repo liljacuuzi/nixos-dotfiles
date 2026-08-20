@@ -1,4 +1,0 @@
-#!/bin/sh
-killall icewmbg 2>/dev/null
-dunst &
-pcmanfm-qt --desktop &

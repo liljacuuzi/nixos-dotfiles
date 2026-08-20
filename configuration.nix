@@ -112,10 +112,10 @@
       xterm
       featherpad
       git
-      bat
       brightnessctl
       alacritty
       picom
+      oxwm
       # copy/pasting text and screenshots
       xclip
       slop
@@ -146,7 +146,9 @@
   networking.firewall.allowedUDPPorts = [ 53317 ];
   
   fonts.packages = with pkgs; [
+    liberation_ttf
     nerd-fonts.jetbrains-mono
+    nerd-fonts.symbols-only
   ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;

@@ -22,19 +22,19 @@ local terminal = "alacritty"
 -- Alternatively you can import other files in here, such as
 -- local colors = require("colors.lua") and make colors.lua a file
 -- in the ~/.config/oxwm directory
--- local colors = require("tokyonight");
-local colors = require("colors.custom-colors");
+local colors = require("tokyonight");
+-- local colors = require("colors.custom-colors");
 
-local tags = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }
--- local tags = { "", "󰊯", "", "󰰏", "󰟿", "󱇤", "", "󱘶", "󰧮" } -- Example of nerd font icon tags
+-- local tags = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }
+local tags = { "", "󰊯", "", "󰰏", "󰟿", "󱇤", "", "󱘶", "󰧮" } -- Example of nerd font icon tags
 
-local bar_font = "Liberation Mono:style=Bold:size=12"
+local bar_font = "JetBrainsMono Nerd Font Propo:style=Bold:size=12"
 
 local blocks = {
     oxwm.bar.block.shell({
         format = " {}",
-        command = "uname -r",
-        interval = 999999999,
+        command = "uname -n",
+        interval = 3600,
         color = colors.red,
         underline = true,
     }),
@@ -58,21 +58,28 @@ local blocks = {
     }),
     oxwm.bar.block.datetime({
         format = "󰸘 {}",
-        date_format = "%a, %b %d - %-I:%M %P",
+        date_format = "%a, %b %d - %H:%M",
         interval = 1,
         color = colors.cyan,
         underline = true,
     }),
+    oxwm.bar.block.static({
+        text = "│",
+        interval = 999999999,
+        color = colors.sep,
+        underline = false,
+    }),
     -- Uncomment to add battery status (useful for laptops)
-    -- oxwm.bar.block.battery({
-    --     format = "Bat: {}%",
-    --     charging = "⚡ Bat: {}%",
-    --     discharging = "- Bat: {}%",
-    --     full = "✓ Bat: {}%",
-    --     interval = 30,
-    --     color = colors.green,
-    --     underline = true,
-    -- }),
+    oxwm.bar.block.battery({
+        battery_name = "BAT1",
+        format = "Bat: {}%",
+        charging = "⚡ Bat: {}%",
+        discharging = "- Bat: {}%",
+        full = "✓ Bat: {}%",
+        interval = 30,
+        color = colors.green,
+        underline = true,
+    }),
 };
 
 -------------------------------------------------------------------------------
@@ -92,16 +99,16 @@ oxwm.set_layout_symbol("tabbed", "[=]")
 -------------------------------------------------------------------------------
 -- Appearance
 -------------------------------------------------------------------------------
-oxwm.border.set_width(0)
+oxwm.border.set_width(2)
 oxwm.border.set_focused_color(colors.purple)
 oxwm.border.set_unfocused_color(colors.grey)
 
 -- Smart Enabled = No border if 1 window
-oxwm.gaps.set_smart(false)
+oxwm.gaps.set_smart(true)
 -- Inner gaps (horizontal, vertical) in pixels
-oxwm.gaps.set_inner(5, 5)
+oxwm.gaps.set_inner(10, 10)
 -- Outer gaps (horizontal, vertical) in pixels
-oxwm.gaps.set_outer(5, 5)
+oxwm.gaps.set_outer(10, 10)
 
 -------------------------------------------------------------------------------
 -- Window Rules

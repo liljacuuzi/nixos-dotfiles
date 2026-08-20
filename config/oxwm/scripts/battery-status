@@ -1,0 +1,12 @@
+#!/bin/sh
+capacity=$(cat /sys/class/power_supply/BAT1/capacity 2>/dev/null)
+status=$(cat /sys/class/power_supply/BAT1/status 2>/dev/null)
+if [ "$status" = "Charging" ]; then
+    echo "⚡ $capacity%"
+elif [ "$status" = "Discharging" ]; then
+    echo "− $capacity%"
+elif [ "$status" = "Full" ]; then
+    echo "✓ $capacity%"
+else
+    echo "$capacity%"
+fi

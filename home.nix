@@ -10,12 +10,14 @@ let
     nvim = "nvim";
     picom = "picom";
     oxwm = "oxwm";
+    st = "st";
   };
 in
     {
       imports = [
         ./scripts/notify.nix
         ./modules/neovim.nix
+        ./modules/suckless.nix
       ];
       home.username = "smalldog";
       home.homeDirectory = "/home/smalldog";
@@ -26,7 +28,7 @@ in
         shellAliases = {
           btw = "echo i use nixos btw";
           nrs = "sudo nixos-rebuild switch --flake ~/nixos-dotfiles#nixos-laptop";
-          nrsu = "sudo nixos-rebuild switch --upgrade";
+          nrsu = "sudo nixos-rebuild switch --flake ~/nixos-dotfiles#nixos-laptop --upgrade";
           sncgd = "sudo nix-collect-garbage -d";
           ncg = "nix-collect-garbage";
           
@@ -43,8 +45,9 @@ in
     
       home.packages = with pkgs; [
         bat
-        rofi
         localsend
+        rofi
+        feh
         # required for pcmanfm-qt
         pcmanfm-qt
       ];

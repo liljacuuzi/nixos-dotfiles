@@ -16,7 +16,7 @@
 local modkey = "Mod4"
 
 -- Terminal emulator command (defualts to alacritty)
-local terminal = "alacritty"
+local terminal = "st"
 
 -- Color palette - customize these to match your theme
 -- Alternatively you can import other files in here, such as

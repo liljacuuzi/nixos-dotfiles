@@ -126,6 +126,8 @@
       # required for pcmanfm-qt
       lxmenu-data
       shared-mime-info
+      # required for ligatures in st
+      harfbuzz
     ];
 
   # Some programs need SUID wrappers, can be configured further or are

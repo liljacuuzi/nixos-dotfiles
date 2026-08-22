@@ -1,31 +1,31 @@
-configuration{
-    modi: ["drun", "window", "run"];
+configuration {
+    modi: ["drun", "window", "run", "power-menu:rofi-power-menu"];
     icon-theme: "Papirus-Dark";
     show-icons: true;
-    terminal: "alacritty";
+    terminal: "st";
     drun-display-format: "{icon} {name}";
     location: 0;
     disable-history: false;
-    sidebar-mode: false;
+    sidebar-mode: true;
     display-drun: " ";
     display-run: " ";
     display-window: " ";
-    
-    //adding vim keybindings
+    display-power-menu: "⏻ ";   // optional nice label
+
+    // vim keybindings
     kb-row-up: "Up,Control+k";
     kb-row-left: "Left,Control+h";
     kb-row-right: "Right,Control+l";
     kb-row-down: "Down,Control+j";
-
     kb-accept-entry: "Control+z,Control+y,Return,KP_Enter";
-
-    //fixing up
+    // fixing up
     kb-remove-to-eol: "";
     kb-move-char-back: "Control+b";
     kb-remove-char-back: "BackSpace";
     kb-move-char-forward: "Control+f";
     kb-mode-complete: "Control+o";
+    // Keybindings to cycle between modes (drun -> window -> power-menu)
+    kb-mode-next: "Shift+Right,Control+Tab";
+    kb-mode-previous: "Shift+Left,Control+ISO_Left_Tab";
 }
-
-
-@theme "/nix/store/qbcx260q2yjvf08cg504zhx9p25qvxz5-rofi-2.0.0/share/rofi/themes/material.rasi"
+@theme "tokyonight.rasi"

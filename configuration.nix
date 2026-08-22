@@ -57,6 +57,8 @@
     windowManager.oxwm.enable = true;
   };
 
+  # PAM so it can authenicate
+  security.pam.services.xsecurelock = {};
 
   # Enable picom services
   services.picom = {
@@ -92,6 +94,7 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
     users.users.smalldog = {
       isNormalUser = true;
+      initialPassword = "changeme";
       extraGroups = [ "wheel" "video" "audio" ]; # Enable ‘sudo’ for the user.
       packages = with pkgs; [
         tree
@@ -116,6 +119,8 @@
       alacritty
       picom
       oxwm
+      feh
+      mpv
       # copy/pasting text and screenshots
       xclip
       slop
@@ -128,8 +133,74 @@
       shared-mime-info
       # required for ligatures in st
       harfbuzz
+      # Required for scree locking
+      xsecurelock
+      xidlehook
+    ];
+  
+  # Enable hardware accelerated graphics
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+  };
+  # Enable the Feral GameMode daemon properly
+  programs.gamemode.enable = true;
+  
+  services.flatpak = {
+    enable = true;  # you already have this
+
+    # Flathub is added by default, but being explicit is fine
+    remotes = [
+      {
+        name = "flathub";
+        location = "https://dl.flathub.org/repo/flathub.flatpakrepo";
+      }
     ];
 
+    packages = [
+      "org.vinegarhq.Sober"   # Sober from Flathub
+      # add more apps here later if you want
+    ];
+
+    # Optional but recommended
+    update.onActivation = true;          # update on every rebuild
+    # or periodic:
+    # update.auto = {
+    #   enable = true;
+    #   onCalendar = "weekly";
+    # };
+  };
+
+  xdg.portal = {
+    enable = true;
+    # Most modern environments (GNOME, KDE Plasma, Hyprland) require an extra portal backend.
+    # For general desktop compatibility, adding the gtk backend is highly recommended:
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    config.common.default = "*";
+  };
+
+  environment.sessionVariables = {
+    # Explicitly disabled to stop conflicts with picom
+    XSECURELOCK_COMPOSITE_OBSCURER = "0";
+
+    # TokyoNight (Night) palette styling
+    XSECURELOCK_BACKGROUND_COLOR = "#1a1b26";
+    XSECURELOCK_AUTH_BACKGROUND_COLOR = "#24283b";
+    XSECURELOCK_AUTH_FOREGROUND_COLOR = "#c0caf5";
+    XSECURELOCK_AUTH_WARNING_COLOR = "#f7768e";
+    XSECURELOCK_FONT = "JetBrainsMono Nerd Font:size=14";
+    XSECURELOCK_SHOW_DATETIME = "1";
+    XSECURELOCK_DATETIME_FORMAT = "%H:%M • %A, %d %B";
+    XSECURELOCK_PASSWORD_PROMPT = "time";
+    XSECURELOCK_SHOW_HOSTNAME = "0";
+    XSECURELOCK_SHOW_USERNAME = "1";
+  };
+
+ # Handle system suspend/hibernate locking via loginctl
+  programs.xss-lock = {
+    enable = true;
+    lockerCommand = "${pkgs.xsecurelock}/bin/xsecurelock";
+  };
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;

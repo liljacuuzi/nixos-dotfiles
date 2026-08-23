@@ -88,7 +88,7 @@ oxwm.set_layout_symbol("tabbed", "[=]")
 -------------------------------------------------------------------------------
 -- Appearance
 -------------------------------------------------------------------------------
-oxwm.border.set_width(2)
+oxwm.border.set_width(3)
 oxwm.border.set_focused_color(colors.purple)
 oxwm.border.set_unfocused_color(colors.grey)
 -- Smart Enabled = No border if 1 window

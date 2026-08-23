@@ -211,7 +211,8 @@ let
   # Enable the X11 windowing system.
   services.xserver = {
     enable = true;
-
+    autoRepeatDelay = 200;
+    autoRepeatInterval = 35;
     displayManager.lightdm.enable = true; # Login manager
     windowManager.awesome.enable = true;
     windowManager.oxwm.enable = true;

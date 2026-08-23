@@ -12,6 +12,7 @@ let
     oxwm = "oxwm";
     st = "st";
     dunst = "dunst";
+    btop = "btop";
   };
 in
   {

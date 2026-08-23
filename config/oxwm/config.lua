@@ -26,7 +26,8 @@ local blocks = {
     oxwm.bar.block.shell({
         format = " {}",
         command = "uname -n",
-        interval = 3600,
+        interval = 999999999,
+        signal = 1,
         color = colors.red,
         underline = true,
     }),
@@ -69,6 +70,7 @@ local blocks = {
         discharging = "- Bat: {}%",
         full = "✓ Bat: {}%",
         interval = 30,
+        signal = 1,
         color = colors.green,
         underline = true,
     }),

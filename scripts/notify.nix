@@ -9,8 +9,20 @@ let
       gawk
       gnugrep
       libnotify
+      coreutils
     ];
     text = ''
+      # Throttle: ignore calls closer than ~90 ms
+      state="/tmp/volume-notify.throttle"
+      now=$(date +%s%3N)
+      if [ -f "$state" ]; then
+        last=$(cat "$state")
+        if [ $((now - last)) -lt 90 ]; then
+          exit 0
+        fi
+      fi
+      echo "$now" > "$state"
+
       case "''${1:-}" in
         up)
           wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+
@@ -47,14 +59,23 @@ let
   # Brightness notification package
   brightness-notify = pkgs.writeShellApplication {
     name = "brightness-notify";
-
     runtimeInputs = with pkgs; [
       brightnessctl
       coreutils
       libnotify
     ];
-
     text = ''
+      # Throttle: ignore calls closer than ~90 ms
+      state="/tmp/brightness-notify.throttle"
+      now=$(date +%s%3N)
+      if [ -f "$state" ]; then
+        last=$(cat "$state")
+        if [ $((now - last)) -lt 90 ]; then
+          exit 0
+        fi
+      fi
+      echo "$now" > "$state"
+
       case "''${1:-}" in
         up)
           brightnessctl set +5%
@@ -69,7 +90,6 @@ let
       esac
 
       bright=$(brightnessctl -m | cut -d, -f4 | tr -d '%')
-
       notify-send \
         -h string:x-dunst-stack-tag:brightness \
         -h int:value:"$bright" \
@@ -77,21 +97,30 @@ let
     '';
   };
 
-# Opacity notification package
+  # Opacity notification package
   opacity-notify = pkgs.writeShellApplication {
     name = "opacity-notify";
-
     runtimeInputs = with pkgs; [
       picom
       libnotify
       xorg.xprop
       gawk
+      coreutils
     ];
-
     text = ''
+      # Throttle: ignore calls closer than ~90 ms
+      state="/tmp/opacity-notify.throttle"
+      now=$(date +%s%3N)
+      if [ -f "$state" ]; then
+        last=$(cat "$state")
+        if [ $((now - last)) -lt 90 ]; then
+          exit 0
+        fi
+      fi
+      echo "$now" > "$state"
+
       # Identify the active window ID
       win_id=$(xprop -root _NET_ACTIVE_WINDOW 2>/dev/null | awk '{print $NF}')
-
       if [ -z "$win_id" ] || [ "$win_id" = "0x0" ]; then
         state_file="/tmp/opacity_default"
       else
@@ -143,7 +172,6 @@ let
         "Opacity" "''${new_opacity}%"
     '';
   };
-
 in
 {
   # Add binaries to user PATH

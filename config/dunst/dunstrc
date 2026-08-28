@@ -6,21 +6,18 @@
     ### Appearance ###
     monitor = 0
     follow = mouse
-
     width = 320
     height = (0, 300)
     origin = top-right
-    offset = (20, 50)          # distance from the edge
+    offset = (20, 50) # distance from the edge
     scale = 0
     notification_limit = 0
-
     progress_bar = true
     progress_bar_height = 8
     progress_bar_frame_width = 1
     progress_bar_min_width = 150
     progress_bar_max_width = 300
     progress_bar_corner_radius = 4
-
     indicate_hidden = yes
     transparency = 10
     separator_height = 2
@@ -28,10 +25,9 @@
     horizontal_padding = 12
     text_icon_padding = 10
     frame_width = 2
-    frame_color = "#7aa2f7"     # Tokyo Night blue
+    frame_color = "#0db9d7" # Tokyo Night blue
     gap_size = 8
     separator_color = frame
-
     sort = yes
     idle_threshold = 120
 
@@ -68,50 +64,53 @@
     class = Dunst
     corner_radius = 10
     ignore_dbusclose = false
-
     force_xwayland = false
     force_xinerama = false
-
     mouse_left_click = close_current
     mouse_middle_click = do_action, close_current
     mouse_right_click = close_all
 
 [urgency_low]
-    background = "#16161e"      # bg_dark
-    foreground = "#c0caf5"      # fg
-    frame_color = "#565f89"     # comment / muted
+    background = "#16161e"
+    foreground = "#c0caf5"
+    frame_color = "#c0caf5"
     timeout = 4
-    # Icon color override if you want
-    # icon = ...
 
 [urgency_normal]
-    background = "#1a1b26"      # main bg
+    background = "#1a1b26"
     foreground = "#c0caf5"
-    frame_color = "#7aa2f7"     # blue (matches your focused border)
+    frame_color = "#c0caf5"
     timeout = 6
 
 [urgency_critical]
-    background = "#292e42"      # bg_highlight
-    foreground = "#f7768e"      # red
-    frame_color = "#f7768e"
-    timeout = 0                 # stays until dismissed
+    background = "#292e42"
+    foreground = "#db4b4b"
+    frame_color = "#db4b4b"
+    timeout = 0
 
-# Optional: make volume / brightness / opacity notifications stand out a bit more
-# (your scripts already use the x-dunst-stack-tag hint)
+# ---------------------------------------------------------------
+# Custom rules – MUST have a matching filter (stack_tag here)
+# ---------------------------------------------------------------
 [volume]
+    stack_tag = volume
     background = "#1a1b26"
-    foreground = "#7dcfff"      # cyan
+    foreground = "#7dcfff"   # cyan
     frame_color = "#7dcfff"
+    highlight = "#7dcfff"    # progress bar matches the cyan accent
     timeout = 3
 
 [brightness]
+    stack_tag = brightness
     background = "#1a1b26"
-    foreground = "#e0af68"      # yellow
+    foreground = "#e0af68"   # yellow
     frame_color = "#e0af68"
+    highlight = "#e0af68"    # progress bar matches the yellow accent
     timeout = 3
 
 [opacity]
+    stack_tag = opacity
     background = "#1a1b26"
-    foreground = "#bb9af7"      # magenta/purple
+    foreground = "#bb9af7"   # magenta/purple
     frame_color = "#bb9af7"
+    highlight = "#bb9af7"    # progress bar matches the purple accent
     timeout = 3

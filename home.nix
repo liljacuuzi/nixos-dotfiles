@@ -54,7 +54,17 @@ in
     pcmanfm-qt
   ];
   
-
+services.udiskie = {
+    enable = true;
+    settings = {
+        # workaround for
+        # https://github.com/nix-community/home-manager/issues/632
+        program_options = {
+            # replace with your favorite file manager
+            file_manager = "pcmanfm-qt";
+        };
+    };
+};
 
   # Set pcmanfm-qt as the default file manager for directories
   xdg.mimeApps = {
@@ -70,25 +80,27 @@ in
   }) configs;
      
    
-  programs.firefox = {
-    enable = true;
-    profiles.myprofile = {
-      settings = {
-        # GPU & Hardware Acceleration
-        "gfx.webrender.all" = true;
-        "media.ffmpeg.vaapi.enabled" = true;
-        "dom.webgpu.enabled" = true;
+ programs.firefox = {
+  enable = true;
 
-        # Performance Tweaks
-        "network.dns.disablePrefetch" = false;
-        "gfx.webrender.vsync.disabled" = true;
-      
-        # Video decoding optimizations
-        "media.hardware-video-decoding.enabled" = true;
+  policies = {
+    ExtensionSettings = {
+      # keep your existing extensions
+      "uBlock0@raymondhill.net" = {
+        install_url = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi";
+        installation_mode = "force_installed";
+      };
+      "addon@darkreader.org" = {
+        install_url = "https://addons.mozilla.org/firefox/downloads/latest/addon@darkreader.org/latest.xpi";
+        installation_mode = "force_installed";
+      };
+      "tokyo-night-v3" = {
+        install_url = "https://addons.mozilla.org/firefox/downloads/latest/tokyo-night-v3/latest.xpi";
+        installation_mode = "force_installed";
       };
     };
   };
-   
+  };   
    
   # automatic git signing
   services.ssh-agent.enable = true;

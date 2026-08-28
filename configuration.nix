@@ -192,6 +192,15 @@ let
   # networking.networkmanager.enable = true; # Easiest to use with most DEs
   # Set your time zone.
 
+  # Allow unfree packages, necessary for steam
+  nixpkgs.config.allowUnfree = true;
+
+  # Enable power-profiles-daemon
+  services.power-profiles-daemon.enable = true;
+
+  # Ensure TLP is disabled to prevent conflicts, this is necessary for power-profiles-daemon
+  services.tlp.enable = false;
+
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   time.timeZone = "America/Vancouver";
@@ -265,7 +274,6 @@ let
     ];
   };
 
-  programs.firefox.enable = true;
 
   # Virtual filesystem support (trash, USB mounting, network shares)
   services.gvfs.enable = true;
@@ -307,13 +315,34 @@ let
     oxwm-lock
   ];
 
+  environment.sessionVariables = {
+    # MOZ_X11_EGL = "1";                 # Critical for good X11 performance + VA-API on AMD
+    MOZ_ENABLE_WAYLAND = "0";          # Force X11 path under OXWM
+    LIBVA_DRIVER_NAME = "radeonsi";    # Explicit Mesa VA-API driver
+    # Optional debug / force:
+    # MOZ_DISABLE_RDD_SANDBOX = "1";   # Only if you hit sandbox issues with VA-API
+    # MOZ_WEBRENDER = "1";
+  };
+
   # Enable hardware accelerated graphics
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
+    extraPackages = with pkgs; [
+      mesa
+      libva
+      libva-utils
+    ];
   };
   # Enable the Feral GameMode daemon properly
   programs.gamemode.enable = true;
+
+  programs.steam = {
+  enable = true;
+  };
+
+  # fsr 1.0 + forcing older games to launch at specified resolution
+  programs.gamescope.enable = true;
 
   services.flatpak = {
     enable = true;  # you already have this

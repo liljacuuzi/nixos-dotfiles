@@ -112,6 +112,7 @@ oxwm.gaps.set_outer(5, 5)
 -- - Configure window behavior based on title or class
 -- Examples (uncomment to use):
 oxwm.rule.add({ instance = "gimp", floating = true })
+oxwm.rule.add({ instance = "steam", tag = 2 })
 oxwm.rule.add({ instance = "sober", tag = 2 })
 oxwm.rule.add({ class = "firefox", tag = 3 })
 oxwm.rule.add({ instance = "slack", tag = 4 })
@@ -128,11 +129,11 @@ oxwm.bar.set_blocks(blocks)
 -- Bar color schemes (for workspace tag display)
 -- Parameters: foreground, background, border
 -- Unoccupied tags
-oxwm.bar.set_scheme_normal(colors.fg, colors.bg, "#444444")
+oxwm.bar.set_scheme_normal(colors.fg, colors.bg, colors.grey)
 -- Occupied tags
 oxwm.bar.set_scheme_occupied(colors.blue, colors.bg, colors.cyan)
 -- Currently selected tag
-oxwm.bar.set_scheme_selected(colors.blue, colors.bg, colors.purple)
+oxwm.bar.set_scheme_selected(colors.blue, colors.red, colors.purple)
 -------------------------------------------------------------------------------
 -- Keybindings (loaded from separate file)
 -------------------------------------------------------------------------------

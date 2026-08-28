@@ -9,7 +9,7 @@
 
 local M       = {}
 
-M.lock_after  = 180 -- total idle seconds before locking (3 min)
+M.lock_after  = 300 -- total idle seconds before locking (3 min)
 M.warn_before = 30  -- show warning this many seconds before locking
 
 local BIN     = "/run/current-system/sw/bin"

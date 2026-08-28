@@ -1,6 +1,9 @@
-vim.cmd.colorscheme("tokyonight")
-vim.cmd("hi Directory guibg=NONE")
-vim.cmd("hi SignColumn guibg=NONE")
-vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
-vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
-vim.api.nvim_set_hl(0, "LineNr", { bg = "none" })
+local status, tokyonight = pcall(require, "tokyonight")
+if not status then return end
+
+tokyonight.setup({
+    style = "night",
+    transparent = true, -- Handles background stripping automatically
+})
+
+vim.cmd.colorscheme("tokyonight-night")

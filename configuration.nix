@@ -33,9 +33,9 @@ let
       XSECURELOCK_XSCREENSAVER_PATH = "${pkgs.xscreensaver}/libexec/xscreensaver";
 
       # A) Random xscreensaver hack mode:
-      # XSECURELOCK_SAVER = "saver_xscreensaver";
+      XSECURELOCK_SAVER = "saver_xscreensaver";
       # B) Background image mode -- comment the line above, uncomment this:
-      XSECURELOCK_SAVER = "${oxwm-saver-image}/bin/saver_oxwm-image";
+      # XSECURELOCK_SAVER = "${oxwm-saver-image}/bin/saver_oxwm-image";
 
       XSECURELOCK_BLANK_TIMEOUT = "1800";       # DPMS-off 30 min into lock
       XSECURELOCK_SAVER_STOP_ON_BLANK = "1";

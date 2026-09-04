@@ -181,15 +181,31 @@ let
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # Use latest kernel.
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  # ===== CachyOS kernel – BORE + ThinLTO (best pure AC performance) =====
+  boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-bore-lto;
+  nix.settings = {
+  substituters = [
+    "https://attic.xuyh0120.win/lantian"
+    "https://cache.nixos.org"
+  ];
+  trusted-public-keys = [
+    "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
+    "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+  ];
+};
+
 
   networking.hostName = "nixos-laptop"; # Define your hostname.
 
   # Configure network connections interactively with nmcli or nmtui.
   networking.networkmanager.enable = true;
-  networking.wireless.enable = true; # Enables wireless support via wpa_supplicant.
+  networking.networkmanager.wifi.powersave = false;
+  # networking.wireless.enable = false; # Enables wireless support via wpa_supplicant.
   # networking.networkmanager.enable = true; # Easiest to use with most DEs
+  
+  # attempt to reenable wifi
+  hardware.enableRedistributableFirmware = true;
+
   # Set your time zone.
 
   # Allow unfree packages, necessary for steam
@@ -225,6 +241,31 @@ let
     displayManager.lightdm.enable = true; # Login manager
     windowManager.awesome.enable = true;
     windowManager.oxwm.enable = true;
+
+    videoDrivers = [ "nvidia" ];
+    dpi = 144; # 150% scaling (96 is default 100%
+    # This avoids the xrandr issue with oxwm, keep this until oxwm fixes it
+    displayManager.sessionCommands = ''
+    sleep 2
+    ${pkgs.xorg.xrandr}/bin/xrandr --auto
+
+    # Sync mode names
+    if ${pkgs.xorg.xrandr}/bin/xrandr | grep -q "HDMI-0 connected"; then
+      ${pkgs.xorg.xrandr}/bin/xrandr \
+        --output eDP-1-1 --mode 2560x1600 --pos 0x0 --primary \
+        --output HDMI-0  --mode 1920x1080 --pos 2560x0 --right-of eDP-1-1
+
+    # Offload / on-the-go mode names
+    elif ${pkgs.xorg.xrandr}/bin/xrandr | grep -q "HDMI-1-0 connected"; then
+      ${pkgs.xorg.xrandr}/bin/xrandr \
+        --output eDP-1 --mode 2560x1600 --pos 0x0 --primary \
+        --output HDMI-1-0 --mode 1920x1080 --pos 2560x0 --right-of eDP-1
+
+    else
+      # Fallback – just make sure the laptop panel is on
+      ${pkgs.xorg.xrandr}/bin/xrandr --auto
+    fi
+  '';
   };
 
   # PAM so it can authenticate
@@ -232,28 +273,55 @@ let
 
   # Picom: never fade the lock screen windows (fixes the flash-on-unlock,
   # google/xsecurelock#97)
-  services.picom = {
-    enable = true;
-    settings = {
-      fade-exclude = [ "class_g = 'xsecurelock'" ];
-    };
+services.picom = {
+  enable = true;
+  backend = "glx";          # keep this
+  settings = {
+    vsync = false;
+    use-damage = false;         # ← try this first. use-damage=true is a common NVIDIA + rapid small windows killer
+    # or keep use-damage = true and add the excludes below
+
+    # Completely ignore the notification windows for expensive operations
+    fade-exclude = [
+      "class_g = 'xsecurelock'"
+      "class_g = 'Dunst'"
+      "name = 'Dunst'"
+    ];
+    shadow-exclude = [
+      "class_g = 'Dunst'"
+      "name = 'Dunst'"
+    ];
+    opacity-rule = [
+      "100:class_g = 'Dunst'"   # force full opacity, no blending cost
+    ];
+
+    # Optional but often helps on NVIDIA
+    # glx-no-stencil = true;   # only relevant if you ever switch to glx
+    # unredir-if-possible = true;
   };
-
-
+};
   # Configure keymap in X11
   # services.xserver.xkb.layout = "us";
   # services.xserver.xkb.options = "eurosign:e,caps:escape";
 
-  # Enable CUPS to print documents.
-  # services.printing.enable = true;
+  # Enable CUPS printing service
+  services.printing.enable = true;
 
-  # Enable sound.
-  # services.pulseaudio.enable = true;
-  # OR
-  # services.pipewire = {
-  #   enable = true;
-  #   pulse.enable = true;
-  # };
+  # Prevent CUPS and its sockets/paths from starting automatically at boot
+  systemd.services.cups.wantedBy = lib.mkForce [ ];
+  systemd.sockets.cups.wantedBy = lib.mkForce [ ];
+  systemd.paths.cups.wantedBy = lib.mkForce [ ];
+
+  # Enable Sound / PipeWire
+  hardware.pulseaudio.enable = false;
+  security.rtkit.enable = true;
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+    wireplumber.enable = true;
+  };
 
   # Enable touchpad support (enabled default in most desktopManager).
   services.libinput = {
@@ -268,12 +336,22 @@ let
   users.users.smalldog = {
     isNormalUser = true;
     initialPassword = "changeme";
-    extraGroups = [ "wheel" "video" "audio" ]; # Enable ‘sudo’ for the user.
+    extraGroups = [ "wheel" "video" "audio" "networkmanager" "i2c" ]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       tree
     ];
   };
 
+  security.sudo.extraRules = [
+    {
+      users = [ "smalldog" ]; # Replace with your actual username
+      commands = [
+        { command = "/run/current-system/sw/bin/legion_cli"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/systemctl start cups.service cups.socket"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/systemctl stop cups.service cups.socket"; options = [ "NOPASSWD" ]; }
+        ];
+      }
+  ];
 
   # Virtual filesystem support (trash, USB mounting, network shares)
   services.gvfs.enable = true;
@@ -313,12 +391,31 @@ let
     oxwm-lock-warn
     oxwm-lock-dismiss
     oxwm-lock
+    # legion tools
+    lenovo-legion
+    openrgb
+    lm_sensors
   ];
+
+  # Enable OpenRGB service for hardware control
+  services.hardware.openrgb.enable = true;
+
+  # Enable I2C access for OpenRGB
+  hardware.i2c.enable = true;
+  boot.kernelModules = [ "i2c-dev" "i2c-i801" "coretemp" "legion-laptop" ];
+  boot.extraModulePackages = [ config.boot.kernelPackages.lenovo-legion-module ];
+
+  services.udev.extraRules = ''
+    # ITE Tech Lenovo Legion RGB Controller
+    SUBSYSTEM=="usb", ATTR{idVendor}=="048d", MODE="0666"
+    SUBSYSTEM=="hidraw", ATTRS{idVendor}=="048d", MODE="0666"
+  '';
+
 
   environment.sessionVariables = {
     # MOZ_X11_EGL = "1";                 # Critical for good X11 performance + VA-API on AMD
     MOZ_ENABLE_WAYLAND = "0";          # Force X11 path under OXWM
-    LIBVA_DRIVER_NAME = "radeonsi";    # Explicit Mesa VA-API driver
+    LIBVA_DRIVER_NAME = "iHD";    # Explicit Mesa VA-API driver
     # Optional debug / force:
     # MOZ_DISABLE_RDD_SANDBOX = "1";   # Only if you hit sandbox issues with VA-API
     # MOZ_WEBRENDER = "1";
@@ -334,6 +431,48 @@ let
       libva-utils
     ];
   };
+
+
+
+hardware.nvidia = {
+  modesetting.enable = true;
+
+  powerManagement = {
+    enable = false;
+    finegrained = false;
+  };
+
+  open = true;
+  nvidiaSettings = true;
+
+  prime = {
+    # Default = sync (good for external monitor / AC power)
+    sync.enable = true;
+
+    intelBusId  = "PCI:0:2:0";
+    nvidiaBusId = "PCI:1:0:0";
+  };
+};
+
+# Battery / on-the-go specialisation (offload mode)
+specialisation = {
+  on-the-go.configuration = {
+    system.nixos.tags = [ "on-the-go" ];
+
+    hardware.nvidia.prime = {
+      sync.enable = lib.mkForce false;
+
+      offload = {
+        enable = lib.mkForce true;
+        enableOffloadCmd = lib.mkForce true;
+      };
+    };
+  };
+};
+  #boot.kernelParams = [
+  #  "acpi_backlight=native" # Directs kernel to use intel_backlight driver
+  #];
+
   # Enable the Feral GameMode daemon properly
   programs.gamemode.enable = true;
 

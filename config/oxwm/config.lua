@@ -26,8 +26,7 @@ local blocks = {
     oxwm.bar.block.shell({
         format = " {}",
         command = "uname -n",
-        interval = 999999999,
-        signal = 1,
+        interval = 30,
         color = colors.red,
         underline = true,
     }),
@@ -69,9 +68,24 @@ local blocks = {
         charging = "⚡ Bat: {}%",
         discharging = "- Bat: {}%",
         full = "✓ Bat: {}%",
-        interval = 30,
+        interval = 10,
         signal = 1,
         color = colors.green,
+        underline = true,
+    }),
+    oxwm.bar.block.static({
+        text = "│",
+        interval = 999999999,
+        color = colors.sep,
+        underline = false,
+    }),
+    oxwm.bar.block.shell({
+        -- Icon legend: 󰥅 = Conservation Active, 󰅖 = Off
+        format = "{}",
+        command =
+        "sudo legion_cli --donotexpecthwmon batteryconservation-status | grep -q 'True' && echo '󰥅 On' || echo '󰅖 Off'",
+        interval = 30,
+        color = colors.purple,
         underline = true,
     }),
 };
@@ -91,7 +105,7 @@ oxwm.set_layout_symbol("tabbed", "[=]")
 -- Appearance
 -------------------------------------------------------------------------------
 oxwm.border.set_width(3)
-oxwm.border.set_focused_color(colors.purple)
+oxwm.border.set_focused_color(colors.blue)
 oxwm.border.set_unfocused_color(colors.grey)
 -- Smart Enabled = No border if 1 window
 oxwm.gaps.set_smart(true)
@@ -134,6 +148,10 @@ oxwm.bar.set_scheme_normal(colors.fg, colors.bg, colors.grey)
 oxwm.bar.set_scheme_occupied(colors.blue, colors.bg, colors.cyan)
 -- Currently selected tag
 oxwm.bar.set_scheme_selected(colors.blue, colors.red, colors.purple)
+
+-- OR directly set an explicit height in pixels (if supported by your build)
+-- oxwm.bar.set_height(35)
+
 -------------------------------------------------------------------------------
 -- Keybindings (loaded from separate file)
 -------------------------------------------------------------------------------
@@ -151,6 +169,6 @@ screen_lock.setup()
 -- Commands to run once when OXWM starts
 -- Uncomment and modify these examples, or add your own
 -- oxwm.autostart("picom")
-oxwm.autostart("feh --bg-scale ~/Walls/tokyo-text.png")
+oxwm.autostart("feh --bg-scale ~/Walls/2560x1600p/tokyo-text.png")
 oxwm.autostart("dunst") -- make sure dunst is running for the notifications
 -- oxwm.autostart("nm-applet")

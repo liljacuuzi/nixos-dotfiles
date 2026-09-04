@@ -17,10 +17,13 @@
     # XLibre display server overlay
     xlibre-overlay.url = "git+https://codeberg.org/takagemacoed/xlibre-overlay?ref=dev-26.11";
     # xlibre-overlay.inputs.nixpkgs.follows = "nixpkgs";
-
+    
+    # CachyOS kernel (use /release for binary-cache hits)
+    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
+    # Do NOT override its nixpkgs input
   };
 
-  outputs = { self, nixpkgs, home-manager, nix-flatpak, xlibre-overlay, ... }: let
+  outputs = { self, nixpkgs, home-manager, nix-flatpak, xlibre-overlay, nix-cachyos-kernel, ... }: let
     system = "x86_64-linux";
     pkgs = import nixpkgs { inherit system; };
   in
@@ -41,7 +44,10 @@
 nixosConfigurations.nixos-laptop = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
-
+        # CachyOS kernel overlay (pinned = best chance of binary cache hits)
+        ({ pkgs, ... }: {
+          nixpkgs.overlays = [ nix-cachyos-kernel.overlays.pinned ];
+        })
         # overlay 'xorg-server' to 'xlibre-xserver'
         xlibre-overlay.nixosModules.overlay-xlibre-xserver
         # Use the NixOS module from the flake
@@ -65,6 +71,5 @@ nixosConfigurations.nixos-laptop = nixpkgs.lib.nixosSystem {
         }
       ];
     };
-
-};
+  };
 }

@@ -43,15 +43,16 @@ let
       muted=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -o "MUTED" || true)
 
       if [ "$muted" = "MUTED" ]; then
-        notify-send \
-          -h string:x-dunst-stack-tag:volume \
-          -h int:value:0 \
-          "Audio" "Muted"
-      else
-        notify-send \
+         notify-send \
           -h string:x-dunst-stack-tag:volume \
           -h int:value:"$vol" \
-          "Volume" "$vol%"
+          "Volume" "$vol%" &    
+      else
+       # volume example (do the same pattern for the other two)
+        dunstify -a "volume" -r 9991 -t 1500 -u low \
+        -h string:x-dunst-stack-tag:volume \
+        -h int:value:"$vol" \
+        "Volume" "$vol%"
       fi
     '';
   };
@@ -78,10 +79,10 @@ let
 
       case "''${1:-}" in
         up)
-          brightnessctl set +5%
+          brightnessctl -d intel_backlight set +5%
           ;;
         down)
-          brightnessctl set 5%-
+          brightnessctl -d intel_backlight set 5%-
           ;;
         *)
           echo "Usage: brightness-notify {up|down}"
@@ -89,21 +90,20 @@ let
           ;;
       esac
 
-      bright=$(brightnessctl -m | cut -d, -f4 | tr -d '%')
-      notify-send \
+      bright=$(brightnessctl -d intel_backlight -m | cut -d, -f4 | tr -d '%')
+      dunstify -a "brightness" -r 9991 -t 1500 -u low \
         -h string:x-dunst-stack-tag:brightness \
         -h int:value:"$bright" \
-        "Brightness" "$bright%"
+        "Brightness" "''${bright}%" &
     '';
   };
-
   # Opacity notification package
   opacity-notify = pkgs.writeShellApplication {
     name = "opacity-notify";
     runtimeInputs = with pkgs; [
       picom
       libnotify
-      xorg.xprop
+      xprop
       gawk
       coreutils
     ];
@@ -166,10 +166,10 @@ let
       picom-trans -c "$new_opacity"
 
       # Send notification to Dunst
-      notify-send \
+      dunstify -a "opacity" -r 9991 -t 1500 -u low \
         -h string:x-dunst-stack-tag:opacity \
         -h int:value:"$new_opacity" \
-        "Opacity" "''${new_opacity}%"
+        "Opacity" "''${new_opacity}%" &
     '';
   };
 in

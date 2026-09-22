@@ -50,6 +50,10 @@ return function(modkey)
     oxwm.key.bind({ modkey, "Shift" }, "J", oxwm.client.move_stack(1))
     oxwm.key.bind({ modkey, "Shift" }, "K", oxwm.client.move_stack(-1))
 
+    -- lock screen
+    oxwm.key.bind({ modkey, "Shift" }, "L",
+        oxwm.spawn({ "sh", "-c", "oxwm-lock" }))
+
     -- Multi-monitor
     oxwm.key.bind({ modkey }, "Comma", oxwm.monitor.focus(-1))
     oxwm.key.bind({ modkey }, "Period", oxwm.monitor.focus(1))

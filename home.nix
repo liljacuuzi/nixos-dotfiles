@@ -46,6 +46,9 @@ in
         cups-start  = "sudo systemctl start cups.socket cups.service && echo 'CUPS active'";
         cups-stop   = "sudo systemctl stop cups.service cups.socket && echo 'CUPS stopped'";
         cups-status = "systemctl status cups.service";
+        #battery conservation
+        batenable = "sudo legion_cli --donotexpecthwmon batteryconservation-enable";
+        batdisable = "sudo legion_cli --donotexpecthwmon batteryconservation-disable";
       };
       
     initExtra = ''
@@ -61,6 +64,7 @@ in
     btop
     # required for pcmanfm-qt
     pcmanfm-qt
+    obsidian
   ];
   
 services.udiskie = {

@@ -13,6 +13,8 @@
 local modkey = "Mod4"
 -- Terminal emulator command (defualts to alacritty)
 local terminal = "st"
+
+local default_layout = "tiling"
 -- Color palette - customize these to match your theme
 -- Alternatively you can import other files in here, such as
 -- local colors = require("colors.lua") and make colors.lua a file
@@ -20,14 +22,46 @@ local terminal = "st"
 local colors = require("tokyonight");
 -- local colors = require("colors.custom-colors");
 -- local tags = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }
-local tags = { "", "󰺷", "", "󰰏", "󰟿", "󱇤", "", "󱘶", "󰧮" } -- Example of nerd font icon tags
+local tags = { "", "󰺷", "", "󰰏", "󰟿", "󱇤", "", "󱘶", "󰧮" } -- Example of nerd font icon tags
 local bar_font = "JetBrainsMono Nerd Font Propo:style=Bold:size=12"
 local blocks = {
     oxwm.bar.block.shell({
-        format = " {}",
-        command = "uname -n",
+        -- Icon legend: 󰥅 = Conservation Active, 󰅖 = Off
+        format = "{}",
+        command =
+        "sudo legion_cli --donotexpecthwmon batteryconservation-status | grep -q 'True' && echo '󰥅 On' || echo '󰅖 Off'",
         interval = 30,
         color = colors.red,
+        underline = true,
+    }),
+    oxwm.bar.block.static({
+        text = "│",
+        interval = 999999999,
+        color = colors.sep,
+        underline = false,
+    }),
+    oxwm.bar.block.battery({
+        battery_name = "BAT1",
+        format = "Bat: {}%",
+        charging = "⚡ Bat: {}%",
+        discharging = "- Bat: {}%",
+        full = "✓ Bat: {}%",
+        interval = 10,
+        signal = 1,
+        color = colors.green,
+        underline = true,
+    }),
+    oxwm.bar.block.static({
+        text = "│",
+        interval = 999999999,
+        color = colors.sep,
+        underline = false,
+    }),
+    oxwm.bar.block.shell({
+        format = " {}",
+        command = "wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}'",
+        interval = 1,
+        color = colors.cyan,
         underline = true,
     }),
     oxwm.bar.block.static({
@@ -50,41 +84,8 @@ local blocks = {
     }),
     oxwm.bar.block.datetime({
         format = "󰸘 {}",
-        date_format = "%a, %b %d - %H:%M:%S",
+        date_format = "%a, %b %d - %H:%M:%S %Z",
         interval = 1,
-        color = colors.cyan,
-        underline = true,
-    }),
-    oxwm.bar.block.static({
-        text = "│",
-        interval = 999999999,
-        color = colors.sep,
-        underline = false,
-    }),
-    -- Uncomment to add battery status (useful for laptops)
-    oxwm.bar.block.battery({
-        battery_name = "BAT1",
-        format = "Bat: {}%",
-        charging = "⚡ Bat: {}%",
-        discharging = "- Bat: {}%",
-        full = "✓ Bat: {}%",
-        interval = 10,
-        signal = 1,
-        color = colors.green,
-        underline = true,
-    }),
-    oxwm.bar.block.static({
-        text = "│",
-        interval = 999999999,
-        color = colors.sep,
-        underline = false,
-    }),
-    oxwm.bar.block.shell({
-        -- Icon legend: 󰥅 = Conservation Active, 󰅖 = Off
-        format = "{}",
-        command =
-        "sudo legion_cli --donotexpecthwmon batteryconservation-status | grep -q 'True' && echo '󰥅 On' || echo '󰅖 Off'",
-        interval = 30,
         color = colors.purple,
         underline = true,
     }),
@@ -101,6 +102,8 @@ oxwm.set_tags(tags)
 oxwm.set_layout_symbol("tiling", "[T]")
 oxwm.set_layout_symbol("normie", "[F]")
 oxwm.set_layout_symbol("tabbed", "[=]")
+oxwm.set_layout_symbol("dwindle", "[DW]")
+
 -------------------------------------------------------------------------------
 -- Appearance
 -------------------------------------------------------------------------------
@@ -128,7 +131,7 @@ oxwm.gaps.set_outer(5, 5)
 oxwm.rule.add({ instance = "gimp", floating = true })
 oxwm.rule.add({ instance = "steam", tag = 2 })
 oxwm.rule.add({ instance = "sober", tag = 2 })
-oxwm.rule.add({ class = "firefox", tag = 3 })
+oxwm.rule.add({ class = "firefox", tag = 1 })
 oxwm.rule.add({ instance = "slack", tag = 4 })
 oxwm.rule.add({ instance = "discord", tag = 5 })
 -- To find window properties, use xprop and click on the window
@@ -169,6 +172,7 @@ screen_lock.setup()
 -- Commands to run once when OXWM starts
 -- Uncomment and modify these examples, or add your own
 -- oxwm.autostart("picom")
+oxwm.autostart("xrandr --output eDP-1 --mode 2560x1600 --rate 60") -- power saving on by default
 oxwm.autostart("feh --bg-scale ~/Walls/2560x1600p/tokyo-text.png")
-oxwm.autostart("dunst") -- make sure dunst is running for the notifications
+oxwm.autostart("dunst")                                            -- make sure dunst is running for the notifications
 -- oxwm.autostart("nm-applet")

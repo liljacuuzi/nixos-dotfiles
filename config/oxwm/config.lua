@@ -22,7 +22,7 @@ local default_layout = "tiling"
 local colors = require("tokyonight");
 -- local colors = require("colors.custom-colors");
 -- local tags = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }
-local tags = { "", "󰺷", "", "󰰏", "󰟿", "󱇤", "", "󱘶", "󰧮" } -- Example of nerd font icon tags
+local tags = { "[1]", "[2]", "[3]", "[4]", "[5]", "[6]", "[7]", "[8]", "[9]" } -- Example of nerd font icon tags
 local bar_font = "JetBrainsMono Nerd Font Propo:style=Bold:size=12"
 local blocks = {
     oxwm.bar.block.shell({
@@ -107,15 +107,15 @@ oxwm.set_layout_symbol("dwindle", "[DW]")
 -------------------------------------------------------------------------------
 -- Appearance
 -------------------------------------------------------------------------------
-oxwm.border.set_width(3)
-oxwm.border.set_focused_color(colors.blue)
+oxwm.border.set_width(2)
+oxwm.border.set_focused_color(colors.green)
 oxwm.border.set_unfocused_color(colors.grey)
 -- Smart Enabled = No border if 1 window
 oxwm.gaps.set_smart(true)
 -- Inner gaps (horizontal, vertical) in pixels
-oxwm.gaps.set_inner(5, 5)
+oxwm.gaps.set_inner(6, 6)
 -- Outer gaps (horizontal, vertical) in pixels
-oxwm.gaps.set_outer(5, 5)
+oxwm.gaps.set_outer(6, 6)
 -------------------------------------------------------------------------------
 -- Window Rules
 -------------------------------------------------------------------------------
@@ -131,6 +131,9 @@ oxwm.gaps.set_outer(5, 5)
 oxwm.rule.add({ instance = "gimp", floating = true })
 oxwm.rule.add({ instance = "steam", tag = 2 })
 oxwm.rule.add({ instance = "sober", tag = 2 })
+oxwm.rule.add({ instance = "obsidian", tag = 2 })
+oxwm.rule.add({ instance = "anki", tag = 3 })
+oxwm.rule.add({ instance = "mpv", tag = 4 })
 oxwm.rule.add({ class = "firefox", tag = 1 })
 oxwm.rule.add({ instance = "slack", tag = 4 })
 oxwm.rule.add({ instance = "discord", tag = 5 })
@@ -172,7 +175,6 @@ screen_lock.setup()
 -- Commands to run once when OXWM starts
 -- Uncomment and modify these examples, or add your own
 -- oxwm.autostart("picom")
-oxwm.autostart("xrandr --output eDP-1 --mode 2560x1600 --rate 60") -- power saving on by default
 oxwm.autostart("feh --bg-scale ~/Walls/2560x1600p/tokyo-text.png")
-oxwm.autostart("dunst")                                            -- make sure dunst is running for the notifications
+oxwm.autostart("dunst") -- make sure dunst is running for the notifications
 -- oxwm.autostart("nm-applet")

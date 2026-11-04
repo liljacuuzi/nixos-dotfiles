@@ -111,11 +111,18 @@ return function(modkey)
     -- Volume  (force PATH so Home Manager binaries are found)
     oxwm.key.bind({}, "XF86AudioRaiseVolume",
         oxwm.spawn({ "sh", "-c", "export PATH=\"$HOME/.nix-profile/bin:$PATH\"; volume-notify up" }))
+    oxwm.key.bind({}, "F3",
+        oxwm.spawn({ "sh", "-c", "export PATH=\"$HOME/.nix-profile/bin:$PATH\"; volume-notify up" }))
+
     oxwm.key.bind({}, "XF86AudioLowerVolume",
         oxwm.spawn({ "sh", "-c", "export PATH=\"$HOME/.nix-profile/bin:$PATH\"; volume-notify down" }))
+    oxwm.key.bind({}, "F2",
+        oxwm.spawn({ "sh", "-c", "export PATH=\"$HOME/.nix-profile/bin:$PATH\"; volume-notify down" }))
+
     oxwm.key.bind({}, "XF86AudioMute",
         oxwm.spawn({ "sh", "-c", "export PATH=\"$HOME/.nix-profile/bin:$PATH\"; volume-notify mute" }))
-
+    oxwm.key.bind({}, "F1",
+        oxwm.spawn({ "sh", "-c", "export PATH=\"$HOME/.nix-profile/bin:$PATH\"; volume-notify mute" }))
     -- Brightness
     oxwm.key.bind({}, "XF86MonBrightnessUp",
         oxwm.spawn({ "sh", "-c", "export PATH=\"$HOME/.nix-profile/bin:$PATH\"; brightness-notify up" }))

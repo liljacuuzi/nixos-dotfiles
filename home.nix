@@ -13,6 +13,7 @@ let
     st = "st";
     dunst = "dunst";
     btop = "btop";
+    yazi = "yazi";
   };
 in
   {
@@ -33,9 +34,9 @@ in
         nrsu = "sudo nixos-rebuild switch --flake ~/nixos-dotfiles#nixos-laptop --upgrade";
         sncgd = "sudo nix-collect-garbage -d";
         ncg = "nix-collect-garbage";
-        displaypowersave = "xrandr --output eDP-1 --mode 1920x1200 --rate 60 | feh --bg-scale ~/Walls/1920x1200p/tokyo-text.png";
-        displaybalanced = "xrandr --output eDP-1 --mode 2560x1600 --rate 60 | feh --bg-scale ~/Walls/2560x1600p/tokyo-text.png";
-        displayperformance = "xrandr --output eDP-1 --mode 2560x1600 --rate 165 | feh --bg-scale ~/Walls/2560x1600p/tokyo-text.png";
+        displaypowersave = "xrandr --output eDP-1 --mode 1920x1200 --rate 60 | xrandr --output eDP-1 --mode 1920x1200 --rate 60 | feh --bg-scale ~/Walls/1920x1200p/tokyo-text.png";
+        displaybalanced = "xrandr --output eDP-1 --mode 2560x1600 --rate 60 | xrandr --output eDP-1 --mode 2560x1600 --rate 60 | feh --bg-scale ~/Walls/2560x1600p/tokyo-text.png";
+        displayperformance = "xrandr --output eDP-1 --mode 2560x1600 --rate 165 | xrandr --output eDP-1-1 --mode 2560x1600 --rate 165 | feh --bg-scale ~/Walls/2560x1600p/tokyo-text.png";
         gamma = "xrandr --output eDP-1 --brightness";
           
         # restore nvim shellAliases
@@ -51,11 +52,17 @@ in
         batdisable = "sudo legion_cli --donotexpecthwmon batteryconservation-disable";
       };
       
+    
+
     initExtra = ''
       export PS1='\[\e[38;5;40m\]\u\[\e[0m\] in \[\e[38;5;33m\]\w\[\e[0m\] \\$ '
     '';
   };
-    
+   
+  programs.neovim = {
+    defaultEditor = true;
+  };
+
   home.packages = with pkgs; [
     bat
     rofi-power-menu
@@ -65,8 +72,32 @@ in
     # required for pcmanfm-qt
     pcmanfm-qt
     obsidian
+    anki
+    zotero
+    freecad
   ];
-  
+
+  services.redshift = {
+    # enable = true;
+
+    # Displays temperature settings (in Kelvin)
+    temperature = {
+      day = 6500;
+      night = 3500;
+    };
+
+    # Schedule Settings
+    dawnTime = "6:00-7:00";
+    duskTime = "19:00-21:00";
+    
+
+    # Coordinates based location
+    provider = "manual";
+
+    latitude = "49.94229149005969";
+    longitude = "-119.39626552344195";
+  };
+
 services.udiskie = {
     enable = true;
     settings = {
@@ -91,8 +122,7 @@ services.udiskie = {
   xdg.configFile = builtins.mapAttrs (name: subpath: {
     source = create_symlink "${dotfiles}/${subpath}";
   }) configs;
-     
-   
+  
  programs.firefox = {
   enable = true;
 

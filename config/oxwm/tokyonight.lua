@@ -11,6 +11,7 @@ return {
     blue       = "#7aa2f7", -- kept the same as light_blue for consistency
     purple     = "#bb9af7",
     lavender   = "#a9b1d6", -- secondary / muted foreground
+    white      = "#f8f9fc",
 
     -- Utility
     grey       = "#565f89", -- comments / muted text

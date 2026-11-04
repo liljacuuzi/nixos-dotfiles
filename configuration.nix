@@ -1,6 +1,6 @@
 # Edit this configuration file to define what should be installed on
-# your system. Help is available in the configuration.nix(5) man page, on
-# https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
+# your system.  Help is available in the configuration.nix(5) man page
+# and in the NixOS manual (`nixos-help`).
 
 { config, lib, pkgs, ... }:
 
@@ -163,7 +163,27 @@ let
         --image-display-duration=inf \
         "$img"
     '';
+
+    # Toggle the panel between 60 Hz (battery) and 165 Hz (AC) at runtime.
+    oxwm-battery-rate = pkgs.writeShellScriptBin "oxwm-battery-rate" ''
+      set -eu
+
+      # Use the rate passed as an argument ($1), defaulting to 60 if not specified
+      RATE="''${1:-60}"
+
+      # Identify the active internal eDP panel (eDP-1 or eDP-1-1)
+      PANEL=$(${pkgs.xrandr}/bin/xrandr | ${pkgs.gnugrep}/bin/grep ' connected' | ${pkgs.gnugrep}/bin/grep 'eDP' | ${pkgs.coreutils}/bin/cut -d' ' -f1)
+
+      if [ -n "$PANEL" ]; then
+        echo "Switching $PANEL to 2560x1600 @ ''${RATE}Hz"
+        ${pkgs.xrandr}/bin/xrandr --output "$PANEL" --mode 2560x1600 --rate "$RATE"
+      else
+        echo "No eDP panel detected." >&2
+        exit 1
+      fi
+    '';
     in
+
  
 {
   imports =
@@ -183,23 +203,37 @@ let
 
   # ===== CachyOS kernel – BORE + ThinLTO (best pure AC performance) =====
   boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-bore-lto;
-  nix.settings = {
-  substituters = [
-    "https://attic.xuyh0120.win/lantian"
-    "https://cache.nixos.org"
-  ];
-  trusted-public-keys = [
-    "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
-    "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-  ];
-};
 
+  boot.kernelParams = [
+    # Force PCIe Active State Power Management (ASPM)
+    "pcie_aspm=force"
+    # ...and prefer the most aggressive ASPM policy available
+    "pcie_aspm.policy=powersupersave"
+    # Enable deep sleep for NVMe drives
+    "nvme_core.default_ps_max_latency_us=5000"
+    # Intel i915 power saving features
+    "i915.enable_fbc=1"
+    "i915.enable_psr=1"
+
+    "intel_pstate=active"
+
+  ];
+
+  # Intel HDA audio codec power management (powers down audio chip after 1s silence)
+  boot.extraModprobeConfig = ''
+    options snd_hda_intel power_save=1 power_save_controller=Y
+    options snd_ac97_codec power_save=1
+    # Force runtime D3 (D3cold) on the dGPU; threshold 0 lets it suspend
+    # even with a non-zero VRAM allocation.
+    options nvidia NVreg_DynamicPowerManagement=0x02
+    options nvidia NVreg_DynamicPowerManagementVideoMemoryThreshold=0
+  '';
 
   networking.hostName = "nixos-laptop"; # Define your hostname.
 
   # Configure network connections interactively with nmcli or nmtui.
   networking.networkmanager.enable = true;
-  networking.networkmanager.wifi.powersave = false;
+  networking.networkmanager.wifi.powersave = true;
   # networking.wireless.enable = false; # Enables wireless support via wpa_supplicant.
   # networking.networkmanager.enable = true; # Easiest to use with most DEs
   
@@ -211,13 +245,42 @@ let
   # Allow unfree packages, necessary for steam
   nixpkgs.config.allowUnfree = true;
 
+  services.ollama = {
+    enable = true;
+    package = pkgs.ollama-cuda;
+  };
+
+  services.open-webui = {
+    enable = true;
+    port = 8080;
+  };
+
+  # Don't start these at boot: ollama-cuda's CUDA init pins the dGPU's PCIe
+  # link in D0 even with no model loaded (upstream: ollama#8591). Start them
+  # manually when you actually need them:
+  #   sudo systemctl start ollama open-webui
+  systemd.services.ollama.wantedBy = lib.mkForce [ ];
+  systemd.services.open-webui.wantedBy = lib.mkForce [ ];
+  systemd.services.syncthing.wantedBy = lib.mkForce [ ];
+
   # Enable power-profiles-daemon
   services.power-profiles-daemon.enable = true;
+  services.tlp.enable = lib.mkForce false;
 
-  # Ensure TLP is disabled to prevent conflicts, this is necessary for power-profiles-daemon
-  services.tlp.enable = false;
+  # Apply powertop's tunables (USB/PCI/SATA runtime PM) at boot.
+  # CAVEAT: occasionally breaks touchpads, USB DACs and BT audio -- test it.
+  powerManagement.powertop.enable = true;
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+  nix.settings = {
+    substituters = [
+      "https://cache.nixos.org"
+    ];
+    trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+    ];
+    experimental-features = [ "nix-command" "flakes" ];
+  };
 
   time.timeZone = "America/Vancouver";
 
@@ -246,27 +309,39 @@ let
     dpi = 144; # 150% scaling (96 is default 100%
     # This avoids the xrandr issue with oxwm, keep this until oxwm fixes it
     displayManager.sessionCommands = ''
-    sleep 2
-    ${pkgs.xorg.xrandr}/bin/xrandr --auto
+      # Allow local root to interact with X11 (required for systemd battery/AC hooks)
+      ${pkgs.xorg.xhost}/bin/xhost +SI:localuser:root || true
 
-    # Sync mode names
-    if ${pkgs.xorg.xrandr}/bin/xrandr | grep -q "HDMI-0 connected"; then
-      ${pkgs.xorg.xrandr}/bin/xrandr \
-        --output eDP-1-1 --mode 2560x1600 --pos 0x0 --primary \
-        --output HDMI-0  --mode 1920x1080 --pos 2560x0 --right-of eDP-1-1
+      sleep 2
+      ${pkgs.xrandr}/bin/xrandr --auto
 
-    # Offload / on-the-go mode names
-    elif ${pkgs.xorg.xrandr}/bin/xrandr | grep -q "HDMI-1-0 connected"; then
-      ${pkgs.xorg.xrandr}/bin/xrandr \
-        --output eDP-1 --mode 2560x1600 --pos 0x0 --primary \
-        --output HDMI-1-0 --mode 1920x1080 --pos 2560x0 --right-of eDP-1
+      # Pick 60 Hz on battery, 165 Hz on AC (matches AC, ACAD, and Legion ADP1)
+      if ${pkgs.gnugrep}/bin/grep -q '^0$' /sys/class/power_supply/{AC*,ADP*}/online 2>/dev/null; then
+        RATE=60
+      else
+        RATE=165
+      fi
 
-    else
-      # Fallback – just make sure the laptop panel is on
-      ${pkgs.xorg.xrandr}/bin/xrandr --auto
-    fi
-  '';
-  };
+      # Sync mode names (NVIDIA sync / docked profile)
+      if ${pkgs.xrandr}/bin/xrandr | ${pkgs.gnugrep}/bin/grep -q "HDMI-0 connected"; then
+        ${pkgs.xrandr}/bin/xrandr \
+          --output eDP-1-1 --mode 2560x1600 --rate "$RATE" --pos 0x0 --primary \
+          --output HDMI-0  --mode 1920x1080 --pos 2560x0 --right-of eDP-1-1
+
+      # Offload / on-the-go mode names (PRIME offload with external screen)
+      elif ${pkgs.xrandr}/bin/xrandr | ${pkgs.gnugrep}/bin/grep -q "HDMI-1-0 connected"; then
+        ${pkgs.xrandr}/bin/xrandr \
+          --output eDP-1 --mode 2560x1600 --rate "$RATE" --pos 0x0 --primary \
+          --output HDMI-1-0 --mode 1920x1080 --pos 2560x0 --right-of eDP-1
+
+      else
+        # Fallback – internal laptop panel only
+        ${pkgs.xrandr}/bin/xrandr --output eDP-1 --mode 2560x1600 --rate "$RATE" 2>/dev/null \
+          || ${pkgs.xrandr}/bin/xrandr --auto
+      fi
+    '';
+    };
+
 
   # PAM so it can authenticate
   security.pam.services.xsecurelock = {};
@@ -275,11 +350,12 @@ let
   # google/xsecurelock#97)
 services.picom = {
   enable = true;
-  backend = "glx";          # keep this
+  backend = "xrender";          # keep this
   settings = {
-    vsync = false;
-    use-damage = false;         # ← try this first. use-damage=true is a common NVIDIA + rapid small windows killer
+    vsync = true;
+    use-damage = true;         # ← try this first. use-damage=true is a common NVIDIA + rapid small windows killer
     # or keep use-damage = true and add the excludes below
+    unredir-if-possible = true;  # unredirect fullscreen windows (video, games)
 
     # Completely ignore the notification windows for expensive operations
     fade-exclude = [
@@ -306,14 +382,13 @@ services.picom = {
 
   # Enable CUPS printing service
   services.printing.enable = true;
-
   # Prevent CUPS and its sockets/paths from starting automatically at boot
   systemd.services.cups.wantedBy = lib.mkForce [ ];
   systemd.sockets.cups.wantedBy = lib.mkForce [ ];
   systemd.paths.cups.wantedBy = lib.mkForce [ ];
 
   # Enable Sound / PipeWire
-  hardware.pulseaudio.enable = false;
+  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -321,6 +396,12 @@ services.picom = {
     alsa.support32Bit = true;
     pulse.enable = true;
     wireplumber.enable = true;
+  };
+
+  # enables bluetooth 
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = false;
   };
 
   # Enable touchpad support (enabled default in most desktopManager).
@@ -362,7 +443,6 @@ services.picom = {
   environment.systemPackages = with pkgs; [
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
-    xterm
     featherpad
     git
     brightnessctl
@@ -371,6 +451,8 @@ services.picom = {
     oxwm
     feh
     mpv
+    # terminal file manager
+    yazi
     # copy/pasting text and screenshots
     xclip
     slop
@@ -388,14 +470,15 @@ services.picom = {
     xidlehook
     xscreensaver
     glib
-    oxwm-lock-warn
-    oxwm-lock-dismiss
-    oxwm-lock
     # legion tools
     lenovo-legion
     openrgb
     lm_sensors
+    # manage app images (ankiengine)
+    gearlever
   ];
+
+  
 
   # Enable OpenRGB service for hardware control
   services.hardware.openrgb.enable = true;
@@ -405,15 +488,60 @@ services.picom = {
   boot.kernelModules = [ "i2c-dev" "i2c-i801" "coretemp" "legion-laptop" ];
   boot.extraModulePackages = [ config.boot.kernelPackages.lenovo-legion-module ];
 
-  services.udev.extraRules = ''
-    # ITE Tech Lenovo Legion RGB Controller
-    SUBSYSTEM=="usb", ATTR{idVendor}=="048d", MODE="0666"
-    SUBSYSTEM=="hidraw", ATTRS{idVendor}=="048d", MODE="0666"
-  '';
+  systemd.services.battery-mode = {
+    description = "Drop GPU/network-heavy services on battery";
+    serviceConfig = {
+      Type = "oneshot";
+    };
+    script = ''
+      ${pkgs.systemd}/bin/systemctl --no-block stop \
+        ollama.service \
+        open-webui.service \
+        syncthing.service \
+        openrgb.service \
+        tailscaled.service || true
 
+      DISPLAY=:0 ${oxwm-battery-rate}/bin/oxwm-battery-rate 60
+    '';
+  };
+  # Drop GPU/network-heavy services when unplugged.
+  # Bring the always-wanted ones back when AC returns (ollama/open-webui stay
+  # opt-in: start them by hand when you're actually developing).
+
+  systemd.services.ac-mode = {
+    description = "Restore services on AC";
+    serviceConfig = {
+      Type = "oneshot";
+    };
+    script = ''
+      ${pkgs.systemd}/bin/systemctl --no-block start \
+        syncthing.service \
+        tailscaled.service || true
+
+      DISPLAY=:0 ${oxwm-battery-rate}/bin/oxwm-battery-rate 165
+    '';
+  };
+
+  services.udev.extraRules = ''
+  # ITE Tech Lenovo Legion RGB Controller
+  SUBSYSTEM=="usb", ATTR{idVendor}=="048d", MODE="0666"
+  SUBSYSTEM=="hidraw", ATTRS{idVendor}=="048d", MODE="0666"
+
+  # Battery mode triggers (Wall unplugged -> quiet profile + power EPP + 60Hz)
+  ACTION=="change", SUBSYSTEM=="power_supply", ATTR{online}=="0", \
+    RUN+="${pkgs.systemd}/bin/systemctl --no-block start battery-mode.service", \
+    RUN+="${pkgs.power-profiles-daemon}/bin/powerprofilesctl set power-saver", \
+    RUN+="${pkgs.lenovo-legion}/bin/legion_cli quiet"
+
+  # AC plugged-in triggers (Wall plugged -> performance EPP + 165Hz)
+  ACTION=="change", SUBSYSTEM=="power_supply", ATTR{online}=="1", \
+    RUN+="${pkgs.systemd}/bin/systemctl --no-block start ac-mode.service", \
+    RUN+="${pkgs.power-profiles-daemon}/bin/powerprofilesctl set performance", \
+    RUN+="${pkgs.lenovo-legion}/bin/legion_cli balanced"
+'';
 
   environment.sessionVariables = {
-    # MOZ_X11_EGL = "1";                 # Critical for good X11 performance + VA-API on AMD
+    MOZ_X11_EGL = "1";                 # Critical for good X11 performance + VA-API
     MOZ_ENABLE_WAYLAND = "0";          # Force X11 path under OXWM
     LIBVA_DRIVER_NAME = "iHD";    # Explicit Mesa VA-API driver
     # Optional debug / force:
@@ -421,11 +549,24 @@ services.picom = {
     # MOZ_WEBRENDER = "1";
   };
 
+  # Firefox 137 removed media.ffmpeg.vaapi.enabled; these are the current
+  # equivalents for hardware decoding on X11. Check about:support afterwards:
+  # HARDWARE_VIDEO_DECODING should be "Force enabled", and the Media section
+  # should list H264_HW_DECODE / VP9_HW_DECODE as Supported.
+    programs.firefox.preferences = {
+    "media.hardware-video-decoding.force-enabled" = true;
+    "gfx.x11-egl.force-enabled"                   = true;
+    "widget.dmabuf.force-enabled"                 = true;
+    "media.av1.enabled"                           = true;
+  };
+
   # Enable hardware accelerated graphics
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
     extraPackages = with pkgs; [
+      intel-media-driver
+      intel-vaapi-driver
       mesa
       libva
       libva-utils
@@ -433,53 +574,52 @@ services.picom = {
   };
 
 
+ 
+  hardware.nvidia = {
+    modesetting.enable = true;
+    open = true;
+    nvidiaSettings = false;
 
-hardware.nvidia = {
-  modesetting.enable = true;
+    powerManagement = {
+      enable = true;
+      finegrained = true; # Requires prime.offload.enable = true below
+    };
 
-  powerManagement = {
-    enable = false;
-    finegrained = false;
-  };
-
-  open = true;
-  nvidiaSettings = true;
-
-  prime = {
-    # Default = sync (good for external monitor / AC power)
-    sync.enable = true;
-
-    intelBusId  = "PCI:0:2:0";
-    nvidiaBusId = "PCI:1:0:0";
-  };
-};
-
-# Battery / on-the-go specialisation (offload mode)
-specialisation = {
-  on-the-go.configuration = {
-    system.nixos.tags = [ "on-the-go" ];
-
-    hardware.nvidia.prime = {
+    prime = {
       sync.enable = lib.mkForce false;
 
       offload = {
         enable = lib.mkForce true;
         enableOffloadCmd = lib.mkForce true;
       };
+
+      intelBusId  = "PCI:0:2:0";
+      nvidiaBusId = "PCI:1:0:0";
     };
   };
-};
-  #boot.kernelParams = [
-  #  "acpi_backlight=native" # Directs kernel to use intel_backlight driver
-  #];
+
+  # Docked specialisation (sync mode for external monitors)
+  specialisation = {
+    docked.configuration = {
+      system.nixos.tags = [ "docked" ];
+
+      hardware.nvidia = {
+        powerManagement.finegrained = lib.mkVMOverride false;
+
+        prime = {
+          offload.enable = lib.mkVMOverride false;
+          offload.enableOffloadCmd = lib.mkVMOverride false;
+          sync.enable = lib.mkVMOverride true;
+        };
+      };
+    };
+  };
 
   # Enable the Feral GameMode daemon properly
   programs.gamemode.enable = true;
-
   programs.steam = {
   enable = true;
   };
-
   # fsr 1.0 + forcing older games to launch at specified resolution
   programs.gamescope.enable = true;
 
@@ -500,7 +640,7 @@ specialisation = {
     ];
 
     # Optional but recommended
-    update.onActivation = true;          # update on every rebuild
+    update.onActivation = false;          # update on every rebuild
     # or periodic:
     # update.auto = {
     #   enable = true;
@@ -514,6 +654,15 @@ specialisation = {
     # For general desktop compatibility, adding the gtk backend is highly recommended:
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
     config.common.default = "*";
+  };
+
+  services.tailscale.enable = true;
+
+  services.syncthing = {
+    enable = true;
+    user = "smalldog";
+    configDir = "/home/smalldog/.config/syncthing";
+    dataDir = "/home/smalldog";
   };
 
 
@@ -536,8 +685,10 @@ specialisation = {
   # services.openssh.enable = true;
 
   # Open ports in the firewall.
-  networking.firewall.allowedTCPPorts = [ 53317 ];
-  networking.firewall.allowedUDPPorts = [ 53317 ];
+  networking.firewall.allowedTCPPorts = [ 53317 22000 8384];
+  networking.firewall.allowedUDPPorts = [ 53317 22000 21027];
+  # syncthing ports
+
 
   fonts.packages = with pkgs; [
     liberation_ttf
@@ -556,7 +707,7 @@ specialisation = {
   # and is used to maintain compatibility with application data (e.g. databases) created on older NixOS versions.
   #
   # Most users should NEVER change this value after the initial install, for any reason,
-  # even if you've upgraded your system to a new NixOS release.
+  # even if you've upgraded your system to a newer NixOS release.
   #
   # This value does NOT affect the Nixpkgs version your packages and OS are pulled from,
   # so changing it will NOT upgrade your system - see https://nixos.org/manual/nixos/stable/#sec-upgrading for how

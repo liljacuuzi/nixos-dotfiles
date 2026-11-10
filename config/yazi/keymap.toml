@@ -1,4 +1,9 @@
-[[manager.prepend_keymap]]
-on = "y"
-run = [ "shell -- echo %s | xclip -i -selection clipboard -t text/uri-list", "yank" ]
-
+[[mgr.prepend_keymap]]
+on   = [ "<C-n>" ]
+run  = 'shell "ripdrag -a -x %s" --orphan'
+desc = "Drag selected files into other applications"
+# Paste files from system clipboard into current directory
+[[mgr.prepend_keymap]]
+on   = [ "p" ]
+run  = [ 'plugin clipboard -- --action=paste' ]
+desc = "Paste from system clipboard"

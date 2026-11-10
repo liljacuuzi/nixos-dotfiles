@@ -1,0 +1,49 @@
+/*
+ * Anki Qt Widgets Pywal Theme
+ * Generated dynamically by pywal16 into ~/.cache/wal/anki-qt.qss
+ */
+
+QMainWindow, QDialog {
+    background-color: {background};
+    color: {foreground};
+}
+
+QMenuBar {
+    background-color: {background};
+    color: {foreground};
+    border-bottom: 1px solid {color8};
+}
+
+QMenuBar::item {
+    background-color: transparent;
+    color: {foreground};
+    padding: 4px 8px;
+}
+
+QMenuBar::item:selected {
+    background-color: {color4};
+    color: {background};
+}
+
+QMenu {
+    background-color: {color0};
+    color: {foreground};
+    border: 1px solid {color8};
+}
+
+QMenu::item:selected {
+    background-color: {color4};
+    color: {background};
+}
+
+QToolTip {
+    background-color: {color0};
+    color: {foreground};
+    border: 1px solid {color8};
+}
+
+QStatusBar {
+    background-color: {background};
+    color: {foreground};
+    border-top: 1px solid {color8};
+}

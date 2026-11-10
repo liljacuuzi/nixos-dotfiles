@@ -1,0 +1,100 @@
+/*
+ * Anki Webview Pywal Theme
+ * Generated dynamically by pywal16 into ~/.cache/wal/anki-webview.css
+ */
+
+:root, :root.night-mode {
+    --canvas: {background} !important;
+    --canvas-elevated: {color0} !important;
+    --canvas-inset: {background} !important;
+    --canvas-overlay: {color0} !important;
+    --canvas-code: {color0} !important;
+    --canvas-glass: rgba(0, 0, 0, 0.25) !important;
+    --fg: {foreground} !important;
+    --fg-subtle: {color7} !important;
+    --fg-link: {color4} !important;
+    --border: {color8} !important;
+    --border-subtle: {color8} !important;
+    --border-focus: {color4} !important;
+    --button-bg: {color0} !important;
+    --button-gradient-start: {color8} !important;
+    --button-gradient-end: {color0} !important;
+    --button-primary-bg: {color4} !important;
+    --button-primary-gradient-start: {color4} !important;
+    --button-primary-gradient-end: {color12} !important;
+    --button-hover-border: {color4} !important;
+    --scrollbar-bg: {background} !important;
+    --scrollbar-bg-hover: {color8} !important;
+    --highlight-bg: {color4} !important;
+    --highlight-fg: {background} !important;
+    --selected-bg: {color4} !important;
+    --selected-fg: {background} !important;
+    --accent-card: {color4} !important;
+    --state-new: {color4} !important;
+    --state-learn: {color1} !important;
+    --state-review: {color2} !important;
+    --shadow: rgba(0, 0, 0, 0.3) !important;
+}
+
+body {
+    background-color: {background} !important;
+    color: {foreground} !important;
+}
+
+/* Main deck list container */
+table, .fancy table {
+    background: {color0} !important;
+    border: 1px solid {color8} !important;
+}
+
+th {
+    border-bottom: 1px solid {color8} !important;
+    color: {color7} !important;
+}
+
+tr.deck td {
+    border-bottom: 1px solid {color8} !important;
+}
+
+.current td, tr:hover:not(.top-level-drag-row) td {
+    background-color: {color8} !important;
+}
+
+/* Bottom action buttons */
+button {
+    background: {color0} !important;
+    color: {foreground} !important;
+    border: 1px solid {color8} !important;
+    border-radius: 4px !important;
+}
+
+button:hover {
+    background: {color4} !important;
+    color: {background} !important;
+    border-color: {color4} !important;
+}
+
+/* Top toolbar & header container */
+.header {
+    background: {background} !important;
+}
+
+.toolbar, body.fancy:not(.flat) .toolbar {
+    background: {color0} !important;
+    border: 1px solid {color8} !important;
+    border-top: none !important;
+}
+
+.left-tray, .right-tray {
+    color: {foreground} !important;
+}
+
+.hitem, body.fancy:not(.flat) .hitem {
+    color: {foreground} !important;
+    background: transparent !important;
+}
+
+.hitem:hover, body.fancy .hitem:hover {
+    color: {color4} !important;
+    background: {color8} !important;
+}

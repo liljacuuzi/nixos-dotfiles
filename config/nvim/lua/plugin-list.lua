@@ -8,6 +8,7 @@ return {
     "nvim-telescope/telescope.nvim",
     { "ThePrimeagen/harpoon", branch = "harpoon2" },
     "folke/tokyonight.nvim",
+    "AlphaTechnolog/pywal.nvim",
     "nvim-lualine/lualine.nvim",
     "brenoprata10/nvim-highlight-colors",
     "tpope/vim-fugitive",

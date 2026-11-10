@@ -57,7 +57,7 @@ let
   brightness-notify = pkgs.writeShellApplication {
     name = "brightness-notify";
     runtimeInputs = with pkgs; [
-      xorg.xrandr
+      xrandr
       gawk
       gnugrep
       coreutils

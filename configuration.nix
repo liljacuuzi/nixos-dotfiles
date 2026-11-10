@@ -9,7 +9,7 @@ let
     # Interpolated directly into the saver script at build time (xsecurelock
     # scrubs the environment before spawning children, so env vars can't be
     # relied upon inside savers).
-    lockImage = "/home/smalldog/Walls/purple-sun-blurred.png";
+    lockImage = "/home/smalldog/nixos-dotfiles/walls/purple-sun-blurred.png";
 
     # ---- Lock screen saver selection -----------------------------------------
     # Pick EXACTLY ONE of the two XSECURELOCK_SAVER values below:
@@ -112,6 +112,16 @@ let
 
       ${exportXsecurelockEnv}
 
+      # Dynamically theme the lockscreen auth box to match active pywal16 colors
+      if [ -f "$HOME/.cache/wal/colors.sh" ]; then
+        . "$HOME/.cache/wal/colors.sh"
+        export XSECURELOCK_BACKGROUND_COLOR="''${background:-#1a1b26}"
+        export XSECURELOCK_AUTH_BACKGROUND_COLOR="''${color0:-#24283b}"
+        export XSECURELOCK_AUTH_FOREGROUND_COLOR="''${foreground:-#c0caf5}"
+        export XSECURELOCK_AUTH_WARNING_COLOR="''${color1:-#f7768e}"
+        export XSECURELOCK_DIM_COLOR="''${color0:-#1a1b26}"
+      fi
+
       /run/current-system/sw/bin/oxwm-lock-dismiss || true
 
       WAS_RUNNING=false
@@ -181,6 +191,11 @@ let
         echo "No eDP panel detected." >&2
         exit 1
       fi
+
+      # Repaint wallpaper after rate switch adhering to pywal / theme-switch
+      if [ -f "/home/smalldog/.fehbg" ]; then
+        ${pkgs.su}/bin/su - smalldog -c "DISPLAY=:0 XAUTHORITY=/home/smalldog/.Xauthority /home/smalldog/.fehbg" 2>/dev/null || true
+      fi
     '';
     in
 
@@ -191,10 +206,6 @@ let
       ./hardware-configuration.nix
     ];
 
-  home-manager.useUserPackages = true;
-  home-manager.useGlobalPkgs = true;
-  home-manager.backupFileExtension = "backup";
-  home-manager.users.smalldog = import ./home.nix;
 
 
   # Use the systemd-boot EFI boot loader.
@@ -309,8 +320,11 @@ let
     dpi = 144; # 150% scaling (96 is default 100%
     # This avoids the xrandr issue with oxwm, keep this until oxwm fixes it
     displayManager.sessionCommands = ''
+      # Export Qt platform theme so all X11 GUI apps follow GTK / pywal
+      export QT_QPA_PLATFORMTHEME=gtk3
+
       # Allow local root to interact with X11 (required for systemd battery/AC hooks)
-      ${pkgs.xorg.xhost}/bin/xhost +SI:localuser:root || true
+      ${pkgs.xhost}/bin/xhost +SI:localuser:root || true
 
       sleep 2
       ${pkgs.xrandr}/bin/xrandr --auto
@@ -446,13 +460,13 @@ services.picom = {
     featherpad
     git
     brightnessctl
-    alacritty
     picom
     oxwm
     feh
     mpv
     # terminal file manager
     yazi
+    ripdrag
     # copy/pasting text and screenshots
     xclip
     slop
@@ -470,15 +484,28 @@ services.picom = {
     xidlehook
     xscreensaver
     glib
+    oxwm-lock-warn
+    oxwm-lock-dismiss
+    oxwm-lock
+    oxwm-saver-image
+    oxwm-battery-rate
+    psmisc
+    jq
     # legion tools
     lenovo-legion
     openrgb
     lm_sensors
     # manage app images (ankiengine)
     gearlever
+    # system-wide icon theme
+    papirus-icon-theme
   ];
 
-  
+  programs.yazi = {
+    plugins = {
+      clipboard = pkgs.yaziPlugins.clipboard;
+    };
+  };
 
   # Enable OpenRGB service for hardware control
   services.hardware.openrgb.enable = true;
@@ -494,7 +521,10 @@ services.picom = {
       Type = "oneshot";
     };
     script = ''
+      ${pkgs.util-linux}/bin/rfkill block bluetooth || true
+
       ${pkgs.systemd}/bin/systemctl --no-block stop \
+        bluetooth.service \
         ollama.service \
         open-webui.service \
         syncthing.service \
@@ -514,7 +544,10 @@ services.picom = {
       Type = "oneshot";
     };
     script = ''
+      ${pkgs.util-linux}/bin/rfkill unblock bluetooth || true
+
       ${pkgs.systemd}/bin/systemctl --no-block start \
+        bluetooth.service \
         syncthing.service \
         tailscaled.service || true
 
@@ -522,28 +555,51 @@ services.picom = {
     '';
   };
 
+  # Ensure Powertop's auto-tune doesn't force sleep on input or audio devices at boot
+  systemd.services.powertop.postStart = ''
+    for dev in /sys/bus/usb/devices/*; do
+      if [ -f "$dev/power/control" ]; then
+        # Class 03 = HID (keyboards/mice), Class 01 = Audio (Apple dongle/DACs)
+        if ${pkgs.gnugrep}/bin/grep -rq -E '^(03|01)$' "$dev"/*/bInterfaceClass 2>/dev/null; then
+          echo on > "$dev/power/control"
+        fi
+      fi
+    done
+  '';
+
   services.udev.extraRules = ''
-  # ITE Tech Lenovo Legion RGB Controller
-  SUBSYSTEM=="usb", ATTR{idVendor}=="048d", MODE="0666"
-  SUBSYSTEM=="hidraw", ATTRS{idVendor}=="048d", MODE="0666"
+    # ITE Tech Lenovo Legion RGB Controller
+    SUBSYSTEM=="usb", ATTR{idVendor}=="048d", MODE="0666"
+    SUBSYSTEM=="hidraw", ATTRS{idVendor}=="048d", MODE="0666"
 
-  # Battery mode triggers (Wall unplugged -> quiet profile + power EPP + 60Hz)
-  ACTION=="change", SUBSYSTEM=="power_supply", ATTR{online}=="0", \
-    RUN+="${pkgs.systemd}/bin/systemctl --no-block start battery-mode.service", \
-    RUN+="${pkgs.power-profiles-daemon}/bin/powerprofilesctl set power-saver", \
-    RUN+="${pkgs.lenovo-legion}/bin/legion_cli quiet"
+    # --- USB Autosuspend Prevention ---
+    # Disable autosuspend on plug-in for HID devices (Keyboards, Mice)
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="03", TEST=="../power/control", ATTR{../power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="03", TEST=="power/control", ATTR{power/control}="on"
 
-  # AC plugged-in triggers (Wall plugged -> performance EPP + 165Hz)
-  ACTION=="change", SUBSYSTEM=="power_supply", ATTR{online}=="1", \
-    RUN+="${pkgs.systemd}/bin/systemctl --no-block start ac-mode.service", \
-    RUN+="${pkgs.power-profiles-daemon}/bin/powerprofilesctl set performance", \
-    RUN+="${pkgs.lenovo-legion}/bin/legion_cli balanced"
-'';
+    # Disable autosuspend for USB Audio (Apple 3.5mm dongle / DACs)
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="01", TEST=="../power/control", ATTR{../power/control}="on"
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="01", TEST=="power/control", ATTR{power/control}="on"
+
+    # --- Battery / AC Triggers ---
+    # Battery mode: ONLY trigger on Mains wall disconnect (ignores USB-C dongles)
+    ACTION=="change", SUBSYSTEM=="power_supply", ATTR{type}=="Mains", ATTR{online}=="0", \
+      RUN+="${pkgs.systemd}/bin/systemctl --no-block start battery-mode.service", \
+      RUN+="${pkgs.power-profiles-daemon}/bin/powerprofilesctl set power-saver", \
+      RUN+="${pkgs.lenovo-legion}/bin/legion_cli quiet"
+
+    # AC mode: ONLY trigger on Mains wall connect (ignores USB-C dongles)
+    ACTION=="change", SUBSYSTEM=="power_supply", ATTR{type}=="Mains", ATTR{online}=="1", \
+      RUN+="${pkgs.systemd}/bin/systemctl --no-block start ac-mode.service", \
+      RUN+="${pkgs.power-profiles-daemon}/bin/powerprofilesctl set performance", \
+      RUN+="${pkgs.lenovo-legion}/bin/legion_cli balanced"
+  '';
 
   environment.sessionVariables = {
     MOZ_X11_EGL = "1";                 # Critical for good X11 performance + VA-API
     MOZ_ENABLE_WAYLAND = "0";          # Force X11 path under OXWM
     LIBVA_DRIVER_NAME = "iHD";    # Explicit Mesa VA-API driver
+    QT_QPA_PLATFORMTHEME = "gtk3";     # Qt apps adopt GTK3 theme & pywal colors
     # Optional debug / force:
     # MOZ_DISABLE_RDD_SANDBOX = "1";   # Only if you hit sandbox issues with VA-API
     # MOZ_WEBRENDER = "1";
@@ -655,6 +711,9 @@ services.picom = {
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
     config.common.default = "*";
   };
+
+  # Enable dconf service for declarative GSettings/Dconf and portal integration
+  programs.dconf.enable = true;
 
   services.tailscale.enable = true;
 

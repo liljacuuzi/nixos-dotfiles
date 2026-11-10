@@ -1,0 +1,197 @@
+/*
+ * PCManFM-Qt Pywal Theme Template
+ * Generated dynamically by pywal16 into ~/.cache/wal/pcmanfm-qt.qss
+ */
+
+QWidget {
+    background-color: {background};
+    color: {foreground};
+}
+
+/* Main folder view & Side pane (Places, Directory Tree) */
+QTreeView, QListView, QTableView,
+QAbstractItemView {
+    background-color: {background};
+    color: {foreground};
+    border: none;
+    outline: none;
+}
+
+QTreeView::item:hover,
+QListView::item:hover,
+QTableView::item:hover {
+    background-color: {color8};
+    color: {foreground};
+}
+
+QTreeView::item:selected,
+QListView::item:selected,
+QTableView::item:selected {
+    background-color: {color4};
+    color: {background};
+}
+
+/* Header columns (Name, Size, Modified, Type) */
+QHeaderView::section {
+    background-color: {color0};
+    color: {foreground};
+    border: 1px solid {color8};
+    padding: 4px 8px;
+    font-weight: bold;
+}
+
+/* Menu Bar & Context Menus */
+QMenuBar {
+    background-color: {background};
+    color: {foreground};
+    border-bottom: 1px solid {color8};
+}
+
+QMenuBar::item {
+    background: transparent;
+    color: {foreground};
+    padding: 4px 8px;
+}
+
+QMenuBar::item:selected {
+    background-color: {color4};
+    color: {background};
+}
+
+QMenu {
+    background-color: {color0};
+    color: {foreground};
+    border: 1px solid {color8};
+}
+
+QMenu::item {
+    padding: 5px 20px;
+    background: transparent;
+}
+
+QMenu::item:selected {
+    background-color: {color4};
+    color: {background};
+}
+
+/* ToolBar & Navigation Controls */
+QToolBar {
+    background-color: {background};
+    border-bottom: 1px solid {color8};
+    spacing: 3px;
+    padding: 2px;
+}
+
+QToolButton {
+    background-color: transparent;
+    color: {foreground};
+    border-radius: 3px;
+    padding: 4px;
+}
+
+QToolButton:hover {
+    background-color: {color8};
+    color: {foreground};
+}
+
+QToolButton:pressed,
+QToolButton:checked {
+    background-color: {color4};
+    color: {background};
+}
+
+/* Location Bar / Path bar / Search Edit */
+QLineEdit {
+    background-color: {color0};
+    color: {foreground};
+    border: 1px solid {color8};
+    border-radius: 3px;
+    padding: 3px 6px;
+    selection-background-color: {color4};
+    selection-color: {background};
+}
+
+QLineEdit:focus {
+    border-color: {color4};
+}
+
+/* Tab Bar */
+QTabBar::tab {
+    background-color: {color0};
+    color: {foreground};
+    border: 1px solid {color8};
+    border-bottom: none;
+    padding: 6px 14px;
+    margin-right: 2px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+QTabBar::tab:selected {
+    background-color: {color4};
+    color: {background};
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: {color8};
+}
+
+/* Status Bar */
+QStatusBar {
+    background-color: {background};
+    color: {color7};
+    border-top: 1px solid {color8};
+}
+
+/* Splitter between Places and Folder View */
+QSplitter::handle {
+    background-color: {color8};
+}
+
+QSplitter::handle:horizontal {
+    width: 1px;
+}
+
+QSplitter::handle:vertical {
+    height: 1px;
+}
+
+/* Scrollbars */
+QScrollBar:vertical {
+    background-color: {background};
+    width: 10px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: {color8};
+    min-height: 20px;
+    border-radius: 4px;
+    margin: 2px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: {color4};
+}
+
+QScrollBar:horizontal {
+    background-color: {background};
+    height: 10px;
+    margin: 0px;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: {color8};
+    min-width: 20px;
+    border-radius: 4px;
+    margin: 2px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background-color: {color4};
+}
+
+QScrollBar::add-line, QScrollBar::sub-line {
+    width: 0px;
+    height: 0px;
+}

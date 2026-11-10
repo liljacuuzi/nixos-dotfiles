@@ -3,6 +3,10 @@ return {
     fg         = "#c0caf5", -- main foreground
     bg         = "#1a1b26", -- main background
 
+    -- Status Bar
+    block_fg   = "#7aa2f7",
+    sep        = "#3b4261",
+
     -- Accents
     red        = "#f7768e",
     green      = "#9ece6a",
@@ -15,5 +19,4 @@ return {
 
     -- Utility
     grey       = "#565f89", -- comments / muted text
-    sep        = "#3b4261", -- separators / borders (was #444b6a)
 }

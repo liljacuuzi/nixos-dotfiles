@@ -15,6 +15,8 @@ return function(modkey)
 
     -- Copy screenshot to clipboard
     oxwm.key.bind({ modkey }, "S", oxwm.spawn({ "sh", "-c", "maim -s | xclip -selection clipboard -t image/png" }))
+    oxwm.key.bind({ modkey, "Shift" }, "S", oxwm.spawn({ "sh", "-c", "maim | xclip -selection clipboard -t image/png" }))
+
 
     oxwm.key.bind({ modkey }, "Q", oxwm.client.kill())
 
@@ -25,8 +27,7 @@ return function(modkey)
     oxwm.key.bind({ modkey, "Shift" }, "F", oxwm.client.toggle_fullscreen())
     oxwm.key.bind({ modkey, "Shift" }, "Space", oxwm.client.toggle_floating())
 
-    -- Layout management
-    oxwm.key.bind({ modkey }, "C", oxwm.layout.set("tiling"))
+
     oxwm.key.bind({ modkey }, "N", oxwm.layout.cycle())
 
     -- Master area controls
@@ -53,6 +54,10 @@ return function(modkey)
     -- lock screen
     oxwm.key.bind({ modkey, "Shift" }, "L",
         oxwm.spawn({ "sh", "-c", "oxwm-lock" }))
+
+    -- launch yazi as file manager
+    oxwm.key.bind({ modkey }, "E", oxwm.spawn({ "st -e yazi" }))
+
 
     -- Multi-monitor
     oxwm.key.bind({ modkey }, "Comma", oxwm.monitor.focus(-1))

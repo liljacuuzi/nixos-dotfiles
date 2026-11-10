@@ -1,0 +1,245 @@
+/*
+ * GTK 3 & GTK 4 Theme Template for pywal16
+ * Generated dynamically into ~/.cache/wal/colors-gtk.css
+ */
+
+/* Color Palette Definitions */
+@define-color theme_bg_color {background};
+@define-color theme_fg_color {foreground};
+@define-color theme_base_color {color0};
+@define-color theme_text_color {foreground};
+@define-color theme_selected_bg_color {color4};
+@define-color theme_selected_fg_color {background};
+@define-color tooltip_bg_color {color0};
+@define-color tooltip_fg_color {foreground};
+@define-color borders {color8};
+@define-color unfocused_borders {color8};
+@define-color warning_color {color3};
+@define-color error_color {color1};
+@define-color success_color {color2};
+
+/* Common GTK color aliases */
+@define-color bg_color {background};
+@define-color fg_color {foreground};
+@define-color base_color {color0};
+@define-color text_color {foreground};
+@define-color selected_bg_color {color4};
+@define-color selected_fg_color {background};
+
+/* Libadwaita / GTK4 accent definitions */
+@define-color accent_color {color4};
+@define-color accent_bg_color {color4};
+@define-color accent_fg_color {background};
+@define-color window_bg_color {background};
+@define-color window_fg_color {foreground};
+@define-color view_bg_color {color0};
+@define-color view_fg_color {foreground};
+@define-color headerbar_bg_color {background};
+@define-color headerbar_fg_color {foreground};
+@define-color headerbar_border_color {color8};
+@define-color card_bg_color {color0};
+@define-color card_fg_color {foreground};
+@define-color dialog_bg_color {background};
+@define-color dialog_fg_color {foreground};
+@define-color popover_bg_color {color0};
+@define-color popover_fg_color {foreground};
+
+/* Windows and surfaces */
+window,
+window.background,
+.background,
+dialog,
+messagedialog {
+    background-color: {background};
+    color: {foreground};
+}
+
+/* Header bars & Titlebars */
+headerbar,
+headerbar.default-decoration,
+.titlebar,
+.titlebar:not(headerbar) {
+    background-color: {background};
+    background-image: none;
+    color: {foreground};
+    border-bottom: 1px solid {color8};
+    box-shadow: none;
+}
+
+headerbar:backdrop,
+.titlebar:backdrop {
+    background-color: {background};
+    background-image: none;
+    color: {color7};
+}
+
+/* Sidebars, lists, trees, and views */
+list,
+list row,
+row,
+treeview,
+.view,
+iconview,
+.sidebar,
+.lutris-sidebar,
+placessidebar {
+    background-color: {color0};
+    color: {foreground};
+}
+
+list row:hover,
+row:hover,
+.lutris-sidebar row:hover {
+    background-color: {color8};
+}
+
+/* Selections and Highlights across all widgets */
+*:selected,
+selection,
+row:selected,
+list row:selected,
+treeview:selected,
+view:selected,
+iconview:selected,
+.lutris-sidebar row:selected {
+    background-color: {color4};
+    color: {background};
+}
+
+/* Buttons */
+button {
+    background-color: {color0};
+    background-image: none;
+    color: {foreground};
+    border: 1px solid {color8};
+    border-radius: 4px;
+    box-shadow: none;
+    text-shadow: none;
+    transition: all 150ms ease;
+}
+
+button:hover {
+    background-color: {color4};
+    background-image: none;
+    color: {background};
+    border-color: {color4};
+}
+
+button:active,
+button:checked {
+    background-color: {color12};
+    background-image: none;
+    color: {background};
+    border-color: {color4};
+}
+
+button.suggested-action {
+    background-color: {color4};
+    background-image: none;
+    color: {background};
+    border-color: {color4};
+}
+
+button.destructive-action {
+    background-color: {color1};
+    background-image: none;
+    color: {background};
+    border-color: {color1};
+}
+
+/* Inputs & Entries */
+entry {
+    background-color: {color0};
+    background-image: none;
+    color: {foreground};
+    border: 1px solid {color8};
+    border-radius: 4px;
+    box-shadow: none;
+}
+
+entry:focus {
+    border-color: {color4};
+}
+
+/* Notebook tabs */
+notebook {
+    background-color: {background};
+}
+
+notebook > header {
+    background-color: {background};
+    border-color: {color8};
+    box-shadow: none;
+}
+
+notebook > header tab {
+    background-color: {color0};
+    background-image: none;
+    color: {color7};
+    border: 1px solid {color8};
+}
+
+notebook > header tab:checked {
+    background-color: {background};
+    background-image: none;
+    color: {foreground};
+    border-bottom: 2px solid {color4};
+}
+
+/* Menus & Popovers */
+menu,
+.menu,
+popover,
+popover.background {
+    background-color: {color0};
+    color: {foreground};
+    border: 1px solid {color8};
+}
+
+menuitem:hover,
+modelbutton:hover {
+    background-color: {color4};
+    color: {background};
+}
+
+/* Scrollbars */
+scrollbar {
+    background-color: transparent;
+}
+
+scrollbar slider {
+    background-color: {color8};
+    border-radius: 4px;
+    min-width: 6px;
+    min-height: 6px;
+}
+
+scrollbar slider:hover {
+    background-color: {color4};
+}
+
+/* Progress bars */
+progressbar progress {
+    background-color: {color4};
+    border-radius: 2px;
+}
+
+/* Switches & Checkboxes */
+switch:checked {
+    background-color: {color4};
+    color: {background};
+}
+
+checkbutton check:checked,
+radiobutton radio:checked {
+    background-color: {color4};
+    color: {background};
+}
+
+/* Tooltips */
+tooltip,
+tooltip.background {
+    background-color: @tooltip_bg_color;
+    color: @tooltip_fg_color;
+    border: 1px solid @borders;
+}

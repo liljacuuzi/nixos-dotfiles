@@ -15,15 +15,19 @@ local modkey = "Mod4"
 local terminal = "st"
 
 local default_layout = "tiling"
--- Color palette - customize these to match your theme
--- Alternatively you can import other files in here, such as
--- local colors = require("colors.lua") and make colors.lua a file
--- in the ~/.config/oxwm directory
-local colors = require("tokyonight");
--- local colors = require("colors.custom-colors");
+-- Color palette - loads pywal generated colors if available, with tokyonight fallback
+package.path = os.getenv("HOME") .. "/.cache/wal/?.lua;" .. package.path
+local ok, colors = pcall(require, "colors")
+if not ok then
+    colors = require("tokyonight")
+end
 -- local tags = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }
 local tags = { "[1]", "[2]", "[3]", "[4]", "[5]", "[6]", "[7]", "[8]", "[9]" } -- Example of nerd font icon tags
 local bar_font = "JetBrainsMono Nerd Font Propo:style=Bold:size=12"
+-- Unified block color matching pywal with distinct divider color
+local block_color = colors.block_fg or colors.blue or colors.light_blue
+local divider_color = colors.sep or colors.grey
+
 local blocks = {
     oxwm.bar.block.shell({
         -- Icon legend: 󰥅 = Conservation Active, 󰅖 = Off
@@ -31,13 +35,13 @@ local blocks = {
         command =
         "sudo legion_cli --donotexpecthwmon batteryconservation-status | grep -q 'True' && echo '󰥅 On' || echo '󰅖 Off'",
         interval = 30,
-        color = colors.red,
+        color = block_color,
         underline = true,
     }),
     oxwm.bar.block.static({
         text = "│",
         interval = 999999999,
-        color = colors.sep,
+        color = divider_color,
         underline = false,
     }),
     oxwm.bar.block.battery({
@@ -48,45 +52,45 @@ local blocks = {
         full = "✓ Bat: {}%",
         interval = 10,
         signal = 1,
-        color = colors.green,
+        color = block_color,
         underline = true,
     }),
     oxwm.bar.block.static({
         text = "│",
         interval = 999999999,
-        color = colors.sep,
+        color = divider_color,
         underline = false,
     }),
     oxwm.bar.block.shell({
         format = " {}",
         command = "wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}'",
         interval = 1,
-        color = colors.cyan,
+        color = block_color,
         underline = true,
     }),
     oxwm.bar.block.static({
         text = "│",
         interval = 999999999,
-        color = colors.sep,
+        color = divider_color,
         underline = false,
     }),
     oxwm.bar.block.ram({
         format = "󰍛 Ram: {used}/{total} GB",
         interval = 5,
-        color = colors.light_blue,
+        color = block_color,
         underline = true,
     }),
     oxwm.bar.block.static({
         text = "│",
         interval = 999999999,
-        color = colors.sep,
+        color = divider_color,
         underline = false,
     }),
     oxwm.bar.block.datetime({
         format = "󰸘 {}",
         date_format = "%a, %b %d - %H:%M:%S %Z",
         interval = 1,
-        color = colors.purple,
+        color = block_color,
         underline = true,
     }),
 };
@@ -100,7 +104,7 @@ oxwm.set_tags(tags)
 -- Layouts
 -------------------------------------------------------------------------------
 oxwm.set_layout_symbol("tiling", "[T]")
-oxwm.set_layout_symbol("normie", "[F]")
+oxwm.set_layout_symbol("normie", "[N]")
 oxwm.set_layout_symbol("tabbed", "[=]")
 oxwm.set_layout_symbol("dwindle", "[DW]")
 
@@ -128,15 +132,26 @@ oxwm.gaps.set_outer(6, 6)
 -- - Send specific applications to specific workspaces
 -- - Configure window behavior based on title or class
 -- Examples (uncomment to use):
+-- 1 is browser
+-- 2 is second working window
+-- 3 is third working window (usually anki)
+-- 4 is games
+-- 5 is video players
+-- 6 is discord / talking
+--
 oxwm.rule.add({ instance = "gimp", floating = true })
-oxwm.rule.add({ instance = "steam", tag = 2 })
-oxwm.rule.add({ instance = "sober", tag = 2 })
+oxwm.rule.add({ class = "firefox", tag = 1 })
 oxwm.rule.add({ instance = "obsidian", tag = 2 })
 oxwm.rule.add({ instance = "anki", tag = 3 })
-oxwm.rule.add({ instance = "mpv", tag = 4 })
-oxwm.rule.add({ class = "firefox", tag = 1 })
-oxwm.rule.add({ instance = "slack", tag = 4 })
-oxwm.rule.add({ instance = "discord", tag = 5 })
+oxwm.rule.add({ instance = "steam", tag = 4 })
+oxwm.rule.add({ instance = "lutris", tag = 4 })
+oxwm.rule.add({ instance = "sober", tag = 4 })
+oxwm.rule.add({ instance = "slack", tag = 3 })
+oxwm.rule.add({ instance = "mpv", tag = 5 })
+oxwm.rule.add({ instance = "discord", tag = 6 })
+
+-- making sure that the file copy window doesnt tile
+oxwm.rule.add({ instance = "ripdrag", floating = true })
 -- To find window properties, use xprop and click on the window
 -- WM_CLASS(STRING) shows both instance and class (instance, class)
 -------------------------------------------------------------------------------
@@ -175,6 +190,7 @@ screen_lock.setup()
 -- Commands to run once when OXWM starts
 -- Uncomment and modify these examples, or add your own
 -- oxwm.autostart("picom")
-oxwm.autostart("feh --bg-scale ~/Walls/2560x1600p/tokyo-text.png")
+-- Restore last pywal wallpaper and colors across reboots, with fallback
+oxwm.autostart("sh -c 'wal -R || (test -f ~/.fehbg && ~/.fehbg) || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png'")
 oxwm.autostart("dunst") -- make sure dunst is running for the notifications
 -- oxwm.autostart("nm-applet")

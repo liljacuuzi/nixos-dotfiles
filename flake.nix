@@ -22,9 +22,14 @@
       url = "github:jacopone/antigravity-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    silentSDDM = {
+      url = "github:uiriansan/SilentSDDM";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, nix-flatpak, xlibre-overlay, nix-cachyos-kernel, antigravity-nix, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, nix-flatpak, xlibre-overlay, nix-cachyos-kernel, antigravity-nix, silentSDDM, ... }@inputs:
   let
     system = "x86_64-linux";
     pkgs = import nixpkgs { 
@@ -42,6 +47,8 @@
         fontconfig
         freetype
         harfbuzz
+        imlib2
+        libXrender
         gcc
         gnumake
       ];

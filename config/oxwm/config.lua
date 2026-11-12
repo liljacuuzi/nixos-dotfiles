@@ -13,8 +13,8 @@
 local modkey = "Mod4"
 -- Terminal emulator command (defualts to alacritty)
 local terminal = "st"
-
-local default_layout = "tiling"
+-- Set default layout for all tags
+oxwm.set_layout("dwindle")
 -- Color palette - loads pywal generated colors if available, with tokyonight fallback
 package.path = os.getenv("HOME") .. "/.cache/wal/?.lua;" .. package.path
 local ok, colors = pcall(require, "colors")
@@ -140,6 +140,7 @@ oxwm.gaps.set_outer(6, 6)
 -- 6 is discord / talking
 --
 oxwm.rule.add({ instance = "gimp", floating = true })
+oxwm.rule.add({ instance = "btop", floating = true })
 oxwm.rule.add({ class = "firefox", tag = 1 })
 oxwm.rule.add({ instance = "obsidian", tag = 2 })
 oxwm.rule.add({ instance = "anki", tag = 3 })
@@ -149,7 +150,6 @@ oxwm.rule.add({ instance = "sober", tag = 4 })
 oxwm.rule.add({ instance = "slack", tag = 3 })
 oxwm.rule.add({ instance = "mpv", tag = 5 })
 oxwm.rule.add({ instance = "discord", tag = 6 })
-
 -- making sure that the file copy window doesnt tile
 oxwm.rule.add({ instance = "ripdrag", floating = true })
 -- To find window properties, use xprop and click on the window
@@ -191,6 +191,7 @@ screen_lock.setup()
 -- Uncomment and modify these examples, or add your own
 -- oxwm.autostart("picom")
 -- Restore last pywal wallpaper and colors across reboots, with fallback
-oxwm.autostart("sh -c 'wal -R || (test -f ~/.fehbg && ~/.fehbg) || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png'")
+oxwm.autostart(
+    "sh -c 'wal -R || (test -f ~/.fehbg && ~/.fehbg) || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png'")
 oxwm.autostart("dunst") -- make sure dunst is running for the notifications
 -- oxwm.autostart("nm-applet")

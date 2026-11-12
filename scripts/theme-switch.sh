@@ -1,6 +1,64 @@
 #!/usr/bin/env bash
 set -e
 
+# ==============================================================================
+# FROSTED LOCKSCREEN SETTINGS (dual_kawase + frosted glass effect)
+# Modify any of these values to tune how frosted your lockscreen looks!
+# Changes take effect automatically the next time you press Super+Shift+L
+# (or run `themeswitch` / `themeswitch --frost-only`).
+# ==============================================================================
+FROST_BLUR_STRENGTH="2.5"  # Blur sigma per Kawase pass (0.5 = crisp, 2.5 = medium frost, 6.0 = heavy blur)
+FROST_DOWNSAMPLE="60"      # Kawase downsample % (10 = ultra-wide dreamy blur, 25 = balanced, 60 = very light)
+FROST_WHITE_GLAZE="12"     # Milky white frosted glass sheen % (0 = none, 12 = frosted glass, 25 = icy white)
+FROST_PYWAL_TINT="0"       # Pywal theme tint % (0 = original colors, 6 = subtle tint; >15 will darken the image)
+FROST_GRAIN="0.11"         # Etched glass micro-grain (0 = smooth blur, 0.22 = frosted texture, 0.50 = sandblasted)
+
+generate_frosted_lock_wallpaper() {
+    local src_wall="$1"
+    if [ ! -f "$src_wall" ] && [ -f "$HOME/.cache/wal/wal" ]; then
+        src_wall="$(cat "$HOME/.cache/wal/wal")"
+    fi
+    if [ ! -f "$src_wall" ]; then
+        src_wall="$HOME/nixos-dotfiles/walls/2560x1600p/tokyo-text.png"
+    fi
+    [ -f "$src_wall" ] || return 0
+    command -v magick >/dev/null 2>&1 || return 0
+
+    mkdir -p "$HOME/.cache/wal"
+    local bg_hex="#1a1b26"
+    if [ -f "$HOME/.cache/wal/colors.sh" ]; then
+        bg_hex="$(grep -E "^background=" "$HOME/.cache/wal/colors.sh" | cut -d"'" -f2)"
+    fi
+
+    local sig="v2|${src_wall}|${FROST_BLUR_STRENGTH}|${FROST_DOWNSAMPLE}|${FROST_WHITE_GLAZE}|${FROST_PYWAL_TINT}|${FROST_GRAIN}|${bg_hex}"
+    if [ -f "$HOME/.cache/wal/lock-wallpaper.png" ] && [ -f "$HOME/.cache/wal/lock-wallpaper.sig" ]; then
+        if [ "$(cat "$HOME/.cache/wal/lock-wallpaper.sig" 2>/dev/null)" = "$sig" ]; then
+            return 0
+        fi
+    fi
+
+    # Dual-Kawase downsample -> etched grain -> upsample -> pywal tint -> milky frost glaze
+    magick "$src_wall" \
+        -resize 2560x1600^ -gravity center -extent 2560x1600 \
+        -filter Triangle \
+        -resize "${FROST_DOWNSAMPLE}%" -blur "0x${FROST_BLUR_STRENGTH}" \
+        -resize 60% -blur "0x${FROST_BLUR_STRENGTH}" \
+        -attenuate "$FROST_GRAIN" +noise Gaussian \
+        -resize 166% -blur "0x1.2" \
+        -resize 2560x1600! \
+        -fill "${bg_hex:-#1a1b26}" -colorize "${FROST_PYWAL_TINT}%" \
+        -fill "#ffffff" -colorize "${FROST_WHITE_GLAZE}%" \
+        -define png:compression-level=1 \
+        "$HOME/.cache/wal/lock-wallpaper.tmp.png" 2>/dev/null && \
+    mv -f "$HOME/.cache/wal/lock-wallpaper.tmp.png" "$HOME/.cache/wal/lock-wallpaper.png" && \
+    printf '%s' "$sig" > "$HOME/.cache/wal/lock-wallpaper.sig"
+}
+
+if [ "$1" = "--frost-only" ]; then
+    generate_frosted_lock_wallpaper "$2"
+    exit 0
+fi
+
 # Read from stdin if piped, otherwise use first argument
 INPUT=""
 if [ -n "$1" ]; then
@@ -13,8 +71,12 @@ fi
 INPUT="${INPUT/#\~/$HOME}"
 INPUT="$(echo "$INPUT" | xargs)" # trim whitespace
 
-# Fallback to default wallpaper if input is empty
-WALLPAPER="${INPUT:-$HOME/nixos-dotfiles/walls/2560x1600p/tokyo-text.png}"
+# Default to currently active pywal wallpaper if no argument given, then fallback to tokyo-text.png
+ACTIVE_WAL=""
+if [ -f "$HOME/.cache/wal/wal" ]; then
+    ACTIVE_WAL="$(cat "$HOME/.cache/wal/wal")"
+fi
+WALLPAPER="${INPUT:-${ACTIVE_WAL:-$HOME/nixos-dotfiles/walls/2560x1600p/tokyo-text.png}}"
 
 # 1. Generate colors using pywal16
 if [ "$1" = "--theme" ] && [ -n "$2" ]; then
@@ -28,9 +90,29 @@ elif [ -f "$WALLPAPER" ]; then
     fi
 else
     echo "Error: File '$WALLPAPER' not found."
-    echo "Usage: $(basename "$0") </path/to/wallpaper.png | --theme <themename>>"
+    echo "Usage: $(basename "$0") </path/to/wallpaper.png | --theme <themename> | --frost-only>"
     echo "   or: echo /path/to/wallpaper.png | $(basename "$0")"
     exit 1
+fi
+
+# Resolve active wallpaper path from pywal cache if --theme was used
+if [ ! -f "$WALLPAPER" ] && [ -f "$HOME/.cache/wal/wal" ]; then
+    WALLPAPER="$(cat "$HOME/.cache/wal/wal")"
+fi
+
+echo "==> Generating dual_kawase frosted lockscreen wallpaper..."
+generate_frosted_lock_wallpaper "$WALLPAPER" &
+
+echo "==> Updating SilentSDDM theme..."
+SDDM_WAL_DIR="/var/cache/wal-sddm"
+if [ -d "$SDDM_WAL_DIR" ]; then
+    if [ -f "$HOME/.cache/wal/silent.conf" ]; then
+        cp -f "$HOME/.cache/wal/silent.conf" "$SDDM_WAL_DIR/silent.conf" 2>/dev/null || true
+    fi
+    if [ -f "$WALLPAPER" ]; then
+        cp -f "$WALLPAPER" "$SDDM_WAL_DIR/wallpaper.png" 2>/dev/null || true
+    fi
+    chmod 644 "$SDDM_WAL_DIR"/* 2>/dev/null || true
 fi
 
 echo "==> Updating Xresources database..."

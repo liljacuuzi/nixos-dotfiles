@@ -13,3 +13,8 @@ To change between the two, you have to go into ~/nixos-dotfiles/configuration.ni
 3. Drivers
 
 Switching from my current amd setup to a potentially nvidia setup will require me to edit a few lines in configuration.nix to change a few lines for hardware.graphicss {}.
+
+
+
+
+The final changes i need to make to my config are to change my lockscreen to match my pywal16, and to change lockscreen to match pywal16 theming

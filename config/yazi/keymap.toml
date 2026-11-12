@@ -7,3 +7,15 @@ desc = "Drag selected files into other applications"
 on   = [ "p" ]
 run  = [ 'plugin clipboard -- --action=paste' ]
 desc = "Paste from system clipboard"
+
+# Jump to USB drive mount point
+[[mgr.prepend_keymap]]
+on   = [ "g", "u" ]
+run  = "cd /run/media/smalldog"
+desc = "Go to USB drive (/run/media/smalldog)"
+
+[[mgr.prepend_keymap]]
+on   = [ "g", "m" ]
+run  = "cd /run/media/smalldog"
+desc = "Go to media (/run/media/smalldog)"
+

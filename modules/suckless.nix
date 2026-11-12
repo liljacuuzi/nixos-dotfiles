@@ -5,7 +5,7 @@
     (st.overrideAttrs (old: {
       src = ../config/st;                 # your local tree
 
-      buildInputs = old.buildInputs ++ [ harfbuzz ];
+      buildInputs = old.buildInputs ++ [ harfbuzz imlib2 ];
       preBuild = "make clean";
 
       # Optional but often useful: force a clean config.def.h from your tree

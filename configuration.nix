@@ -2,48 +2,63 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (`nixos-help`).
 
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 
 let
+    # Fallback wallpaper for SilentSDDM (matches themeswitch default)
+    defaultSddmWallpaper = "/home/smalldog/nixos-dotfiles/walls/2560x1600p/tokyo-text.png";
+
+    # Dynamic pywal SilentSDDM theme
+    silentSDDMTheme = pkgs.stdenv.mkDerivation {
+      pname = "silent";
+      version = "unstable";
+      src = inputs.silentSDDM;
+      installPhase = ''
+        mkdir -p $out/share/sddm/themes/silent
+        cp -r * $out/share/sddm/themes/silent/
+
+        # Point active config to /var/cache/wal-sddm/silent.conf
+        ln -sfn /var/cache/wal-sddm/silent.conf $out/share/sddm/themes/silent/configs/wal.conf
+        sed -i 's|^ConfigFile=.*|ConfigFile=configs/wal.conf|' $out/share/sddm/themes/silent/metadata.desktop
+
+        # Point active background to /var/cache/wal-sddm/wallpaper.png
+        ln -sfn /var/cache/wal-sddm/wallpaper.png $out/share/sddm/themes/silent/backgrounds/wal.png
+      '';
+    };
+
     # ---- Your lock background ------------------------------------------------
     # Interpolated directly into the saver script at build time (xsecurelock
     # scrubs the environment before spawning children, so env vars can't be
     # relied upon inside savers).
     lockImage = "/home/smalldog/nixos-dotfiles/walls/purple-sun-blurred.png";
 
-    # ---- Lock screen saver selection -----------------------------------------
-    # Pick EXACTLY ONE of the two XSECURELOCK_SAVER values below:
-    #
-    #   A) xscreensaver hacks -> saver_xscreensaver picks a random hack from
-    #                            your ~/.xscreensaver "programs:" list
-    #                            (run `xscreensaver-demo` once to create it!)
-    #   B) image              -> our own saver module draws your wallpaper
-    #                            into the lock window. This bypasses the
-    #                            xscreensaver bridge entirely, because that
-    #                            bridge ignores directories whenever
-    #                            ~/.xscreensaver exists (it only reads the
-    #                            programs list there), so a custom dir-based
-    #                            "hack" can never be selected once
-    #                            ~/.xscreensaver exists.
-    #
-    # NOTE: leaving BOTH uncommented is impossible -- Nix rejects duplicate
-    # attributes -- so the config can never be ambiguous.
+    # ---- Lock screen saver & hybrid frosted wallpaper configuration ----------
+    # Flow when locked:
+    #   1. Displays the pre-rendered dual_kawase frosted pywal wallpaper
+    #      (~/.cache/wal/lock-wallpaper.png, with fallback to lockImage)
+    #   2. After 60s of continuous inactivity while locked, transitions into
+    #      a random xscreensaver hack from ~/.xscreensaver
+    #   3. Upon any mouse movement or keypress, immediately stops the
+    #      xscreensaver hack, restores the frosted dual_kawase wallpaper, and
+    #      opens the pywal-themed auth_x11 password prompt.
     xsecurelockSettings = {
-      # Where the REAL xscreensaver hacks live (only used by mode A).
+      # Where the REAL xscreensaver hacks live.
       XSECURELOCK_XSCREENSAVER_PATH = "${pkgs.xscreensaver}/libexec/xscreensaver";
 
-      # A) Random xscreensaver hack mode:
-      XSECURELOCK_SAVER = "saver_xscreensaver";
-      # B) Background image mode -- comment the line above, uncomment this:
-      # XSECURELOCK_SAVER = "${oxwm-saver-image}/bin/saver_oxwm-image";
+      # Hybrid saver: frosted dual_kawase wallpaper <-> xscreensaver on idle
+      XSECURELOCK_SAVER = "${oxwm-saver-hybrid}/bin/saver_oxwm-hybrid";
+      XSECURELOCK_SAVER_RESET_ON_AUTH_CLOSE = "1";
+      XSECURELOCK_SAVER_IDLE_TIMEOUT = "60";    # 60s on frosted wallpaper before xscreensaver starts
+      XSECURELOCK_SAVER_DELAY_MS = "80";        # Let saver paint frosted image before mapping window
 
       XSECURELOCK_BLANK_TIMEOUT = "1800";       # DPMS-off 30 min into lock
       XSECURELOCK_SAVER_STOP_ON_BLANK = "1";
 
       # Explicitly disabled to stop conflicts with picom
       XSECURELOCK_COMPOSITE_OBSCURER = "0";
+      XSECURELOCK_DISCARD_FIRST_KEYPRESS = "0";
 
-      # TokyoNight (Night) palette styling
+      # Fallback TokyoNight (Night) palette styling (overridden dynamically by pywal in oxwm-lock)
       XSECURELOCK_BACKGROUND_COLOR = "#1a1b26";
       XSECURELOCK_AUTH_BACKGROUND_COLOR = "#24283b";
       XSECURELOCK_AUTH_FOREGROUND_COLOR = "#c0caf5";
@@ -73,7 +88,163 @@ let
       export DISPLAY="''${DISPLAY:-:0}"
       # xscreensaver >= 6 hacks shell out to helpers living IN the hacks
       # directory (xscreensaver-getimage-*, xscreensaver-text, ...).
-      export PATH="${pkgs.xscreensaver}/libexec/xscreensaver:${lib.makeBinPath [ pkgs.coreutils ]}:''${PATH:-}"
+      export PATH="${pkgs.xscreensaver}/libexec/xscreensaver:${lib.makeBinPath [ pkgs.coreutils pkgs.imagemagick ]}:''${PATH:-}"
+    '';
+
+    # Native X11 + Imlib2 helpers:
+    #  1) oxwm-set-win-bg: paints the frosted wallpaper directly onto
+    #     xsecurelock's $XSCREENSAVER_WINDOW (both as background_pixmap and via
+    #     Expose/MapNotify events) using ~1.5 MB RAM and 0% CPU.
+    #  2) oxwm-wait-input: monitors live X11 pointer coordinates (XQueryPointer)
+    #     and keymap state (XQueryKeymap) every 80ms; returns 0 immediately on
+    #     any mouse movement or keypress, or 1 if timeout_ms elapses with no input.
+    oxwm-set-win-bg = pkgs.runCommandCC "oxwm-set-win-bg" {
+      buildInputs = [ pkgs.xorg.libX11 pkgs.imlib2 ];
+    } ''
+      mkdir -p $out/bin
+      cat << 'EOF' > main.c
+      #include <X11/Xlib.h>
+      #include <Imlib2.h>
+      #include <signal.h>
+      #include <stdio.h>
+      #include <stdlib.h>
+      #include <unistd.h>
+
+      static volatile sig_atomic_t keep_running = 1;
+      static void handle_sig(int sig) { (void)sig; keep_running = 0; }
+      static int x_err_handler(Display *d, XErrorEvent *e) { (void)d; (void)e; return 0; }
+
+      int main(int argc, char **argv) {
+          if (argc < 3) return 1;
+          Window win = (Window)strtoul(argv[1], NULL, 0);
+          const char *img_path = argv[2];
+
+          signal(SIGTERM, handle_sig);
+          signal(SIGINT, handle_sig);
+
+          Display *dpy = XOpenDisplay(NULL);
+          if (!dpy) return 1;
+          XSetErrorHandler(x_err_handler);
+
+          XWindowAttributes attr;
+          if (!XGetWindowAttributes(dpy, win, &attr) || attr.width <= 0 || attr.height <= 0) {
+              XCloseDisplay(dpy);
+              return 1;
+          }
+
+          Imlib_Image img = imlib_load_image(img_path);
+          if (!img) {
+              XCloseDisplay(dpy);
+              return 1;
+          }
+
+          imlib_context_set_display(dpy);
+          imlib_context_set_visual(attr.visual);
+          imlib_context_set_colormap(attr.colormap);
+          imlib_context_set_image(img);
+
+          Pixmap pmap = XCreatePixmap(dpy, win, attr.width, attr.height, attr.depth);
+          imlib_context_set_drawable(pmap);
+          imlib_render_image_on_drawable_at_size(0, 0, attr.width, attr.height);
+          imlib_free_image();
+
+          GC gc = XCreateGC(dpy, win, 0, NULL);
+          XSelectInput(dpy, win, ExposureMask | StructureNotifyMask | VisibilityChangeMask);
+          XSetWindowBackgroundPixmap(dpy, win, pmap);
+          XClearWindow(dpy, win);
+          XCopyArea(dpy, pmap, win, gc, 0, 0, attr.width, attr.height, 0, 0);
+          XFlush(dpy);
+
+          int initial_Burst = 15;
+          while (keep_running) {
+              int need_redraw = (initial_Burst > 0);
+              if (initial_Burst > 0) initial_Burst--;
+
+              while (XPending(dpy) > 0) {
+                  XEvent ev;
+                  XNextEvent(dpy, &ev);
+                  if (ev.type == Expose || ev.type == MapNotify || ev.type == ConfigureNotify || ev.type == VisibilityNotify) {
+                      need_redraw = 1;
+                  }
+              }
+              if (need_redraw) {
+                  XSetWindowBackgroundPixmap(dpy, win, pmap);
+                  XCopyArea(dpy, pmap, win, gc, 0, 0, attr.width, attr.height, 0, 0);
+                  XFlush(dpy);
+              }
+              usleep(100000);
+          }
+
+          XFreeGC(dpy, gc);
+          XFreePixmap(dpy, pmap);
+          XCloseDisplay(dpy);
+          return 0;
+      }
+      EOF
+      $CC -O2 main.c -o $out/bin/oxwm-set-win-bg -lX11 -lImlib2
+
+      cat << 'EOF' > wait_input.c
+      #include <X11/Xlib.h>
+      #include <string.h>
+      #include <stdlib.h>
+      #include <time.h>
+      #include <unistd.h>
+
+      static long now_ms(void) {
+          struct timespec ts;
+          clock_gettime(CLOCK_MONOTONIC, &ts);
+          return (long)ts.tv_sec * 1000L + (long)(ts.tv_nsec / 1000000L);
+      }
+
+      int main(int argc, char **argv) {
+          long timeout_ms = (argc > 1) ? atol(argv[1]) : 60000;
+          Display *dpy = XOpenDisplay(NULL);
+          if (!dpy) {
+              usleep((useconds_t)(timeout_ms > 60000 ? 60000 : timeout_ms) * 1000);
+              return 1;
+          }
+          Window root = DefaultRootWindow(dpy);
+
+          Window r_ret, c_ret;
+          int rx0 = 0, ry0 = 0, wx, wy;
+          unsigned int mask0 = 0;
+          char last_keys[32], keys[32];
+
+          XQueryPointer(dpy, root, &r_ret, &c_ret, &rx0, &ry0, &wx, &wy, &mask0);
+          XQueryKeymap(dpy, last_keys);
+
+          long start_ms = now_ms();
+          const unsigned int btn_mask = Button1Mask | Button2Mask | Button3Mask | Button4Mask | Button5Mask;
+
+          while ((now_ms() - start_ms) < timeout_ms) {
+              usleep(80 * 1000);
+
+              int rx = 0, ry = 0;
+              unsigned int mask = 0;
+              XQueryPointer(dpy, root, &r_ret, &c_ret, &rx, &ry, &wx, &wy, &mask);
+              XQueryKeymap(dpy, keys);
+
+              /* Trigger on pointer movement (>= 2px) or new mouse button press */
+              if (abs(rx - rx0) >= 2 || abs(ry - ry0) >= 2 || (((mask & ~mask0) & btn_mask) != 0)) {
+                  XCloseDisplay(dpy);
+                  return 0;
+              }
+
+              /* Trigger only on a new key PRESS (0 -> 1 transition), ignoring key releases */
+              for (int i = 0; i < 32; i++) {
+                  if (((unsigned char)keys[i] & ~(unsigned char)last_keys[i]) != 0) {
+                      XCloseDisplay(dpy);
+                      return 0;
+                  }
+                  last_keys[i] = keys[i];
+              }
+              mask0 = mask;
+          }
+          XCloseDisplay(dpy);
+          return 1; /* Full timeout_ms elapsed on CLOCK_MONOTONIC with zero movement/keypress */
+      }
+      EOF
+      $CC -O2 wait_input.c -o $out/bin/oxwm-wait-input -lX11
     '';
 
     oxwm-lock-warn = pkgs.writeShellScriptBin "oxwm-lock-warn" ''
@@ -122,56 +293,125 @@ let
         export XSECURELOCK_DIM_COLOR="''${color0:-#1a1b26}"
       fi
 
+      # Ensure ~/.cache/wal/lock-wallpaper.png is up-to-date with current wallpaper & frost settings
+      if [ -x "$HOME/nixos-dotfiles/scripts/theme-switch.sh" ]; then
+        "$HOME/nixos-dotfiles/scripts/theme-switch.sh" --frost-only "''${wallpaper:-}" 2>/dev/null || true
+      fi
+
       /run/current-system/sw/bin/oxwm-lock-dismiss || true
 
-      WAS_RUNNING=false
-      if systemctl --user is-active --quiet picom.service; then
-        WAS_RUNNING=true
-        systemctl --user stop picom.service
-      fi
-
-      xsecurelock
-
-      [ "$WAS_RUNNING" = true ] && systemctl --user start picom.service
+      exec xsecurelock
     '';
 
-    # A native xsecurelock saver module that fills the lock window with your
-    # background image. xsecurelock accepts an ABSOLUTE path in
-    # XSECURELOCK_SAVER (verified against its sources), so we don't need the
-    # xscreensaver bridge (and its ~/.xscreensaver quirks) at all for this.
-    oxwm-saver-image = pkgs.writeShellScriptBin "saver_oxwm-image" ''
-      # xsecurelock saver protocol:
-      #  - draw into/below $XSCREENSAVER_WINDOW
-      #  - exit promptly on SIGTERM (when unlocking)
+    # Hybrid xsecurelock saver module:
+    #  - Immediately paints the pre-rendered dual_kawase frosted pywal wallpaper
+    #    onto $XSCREENSAVER_WINDOW's X11 background_pixmap via oxwm-set-win-bg.
+    #  - Waits for 60s of continuous inactivity via xsecurelock's event-driven
+    #    until_nonidle helper before launching saver_xscreensaver.
+    #  - On any mouse movement or keypress, immediately stops the xscreensaver
+    #    hack, repaints the frosted wallpaper, and sends SIGUSR2 to xsecurelock
+    #    so the pywal-themed auth_x11 password prompt opens immediately.
+    oxwm-saver-hybrid = pkgs.writeShellScriptBin "saver_oxwm-hybrid" ''
+      ${lockEnv}
+      [ -n "''${XSCREENSAVER_WINDOW:-}" ] || exec ${pkgs.coreutils}/bin/sleep infinity
 
-      echo "=== saver_oxwm-image started $(date -Is) ===" >&2
+      FROSTED_IMG="$HOME/.cache/wal/lock-wallpaper.png"
+      [ -f "$FROSTED_IMG" ] || FROSTED_IMG="${lockImage}"
 
-      img="${lockImage}"
+      IDLE_LIMIT="''${XSECURELOCK_SAVER_IDLE_TIMEOUT:-60}"
+      WAIT_INPUT="${oxwm-set-win-bg}/bin/oxwm-wait-input"
+      BG_PID=""
+      SAVER_PID=""
+      WAIT_PID=""
 
-      if [ ! -f "$img" ]; then
-        echo "ERROR: image '$img' does not exist" >&2
-        # Hold the window open (shows the background color) instead of dying;
-        # a dead saver would make xsecurelock relaunch us in a tight loop.
-        exec ${pkgs.coreutils}/bin/sleep infinity
-      fi
-      
-      if [ -z "''${XSCREENSAVER_WINDOW:-}" ]; then
-        echo "ERROR: XSCREENSAVER_WINDOW is not set" >&2
-        exec ${pkgs.coreutils}/bin/sleep infinity
-      fi
+      stop_bg() {
+        if [ -n "$BG_PID" ] && kill -0 "$BG_PID" 2>/dev/null; then
+          kill -TERM -- "-$BG_PID" 2>/dev/null || kill -TERM "$BG_PID" 2>/dev/null || true
+          wait "$BG_PID" 2>/dev/null || true
+        fi
+        BG_PID=""
+      }
 
-      echo "running mpv on window $XSCREENSAVER_WINDOW with $img" >&2
-      
-      # Use mpv to display the image indefinitely inside the xsecurelock window
-      exec ${pkgs.mpv}/bin/mpv \
-        --really-quiet \
-        --no-config \
-        --no-osc \
-        --no-osd-bar \
-        --no-input-default-bindings \
-        --wid="$XSCREENSAVER_WINDOW" \
-        --image-display-duration=inf \
-        "$img"
+      paint_frosted() {
+        stop_bg
+        if [ -f "$FROSTED_IMG" ]; then
+          ${pkgs.util-linux}/bin/setsid sh -c '
+            ${oxwm-set-win-bg}/bin/oxwm-set-win-bg "$1" "$2" || \
+            exec ${pkgs.mpv}/bin/mpv \
+              --really-quiet --no-config --no-osc --no-osd-bar \
+              --no-input-default-bindings --vo=x11 --ao=null \
+              --no-audio --hwdec=no --wid="$1" \
+              --image-display-duration=inf "$2"
+          ' _ "$XSCREENSAVER_WINDOW" "$FROSTED_IMG" &
+          BG_PID=$!
+        fi
+      }
+
+      stop_hack() {
+        if [ -n "$SAVER_PID" ] && kill -0 "$SAVER_PID" 2>/dev/null; then
+          kill -TERM -- "-$SAVER_PID" 2>/dev/null || kill -TERM "$SAVER_PID" 2>/dev/null || true
+          wait "$SAVER_PID" 2>/dev/null || true
+        fi
+        SAVER_PID=""
+      }
+
+      stop_wait() {
+        if [ -n "$WAIT_PID" ] && kill -0 "$WAIT_PID" 2>/dev/null; then
+          kill -TERM "$WAIT_PID" 2>/dev/null || true
+          wait "$WAIT_PID" 2>/dev/null || true
+        fi
+        WAIT_PID=""
+      }
+
+      cleanup() {
+        stop_wait
+        stop_hack
+        stop_bg
+        exit 0
+      }
+      trap cleanup TERM INT
+      trap 'stop_wait; stop_hack; paint_frosted' USR1
+
+      paint_frosted
+      # Brief settling delay so key-release from Super+Shift+L doesn't immediately re-trigger wake
+      ${pkgs.coreutils}/bin/sleep 0.35
+
+      while :; do
+        # 1. If auth_x11 is currently open, wait until it closes before starting the 60s countdown
+        while ${pkgs.procps}/bin/pgrep -u "$USER" -x auth_x11 >/dev/null 2>&1; do
+          ${pkgs.coreutils}/bin/sleep 0.3
+        done
+
+        # 2. Wait for 60s of continuous inactivity on the frosted wallpaper.
+        #    oxwm-wait-input returns 0 on any mouse move or keypress, 1 if full 60s elapses.
+        "$WAIT_INPUT" "$((IDLE_LIMIT * 1000))" &
+        WAIT_PID=$!
+        if wait "$WAIT_PID"; then
+          WAIT_PID=""
+          # Movement or keypress occurred while on frosted wallpaper: summon auth_x11 prompt
+          ${pkgs.procps}/bin/pkill -u "$USER" -USR2 -x xsecurelock 2>/dev/null || true
+          ${pkgs.coreutils}/bin/sleep 0.25
+          continue
+        fi
+        WAIT_PID=""
+
+        # 3. 60s of inactivity reached: free frosted pixmap and launch xscreensaver hack
+        stop_bg
+        ${pkgs.util-linux}/bin/setsid ${pkgs.xsecurelock}/libexec/xsecurelock/saver_xscreensaver &
+        SAVER_PID=$!
+
+        # 4. Block until ANY mouse movement or keypress is detected (up to 24h)
+        "$WAIT_INPUT" 86400000 &
+        WAIT_PID=$!
+        wait "$WAIT_PID" || true
+        WAIT_PID=""
+
+        # 5. Movement/input detected! Stop xscreensaver, repaint frosted wallpaper, and pop up auth_x11
+        stop_hack
+        paint_frosted
+        ${pkgs.procps}/bin/pkill -u "$USER" -USR2 -x xsecurelock 2>/dev/null || true
+        ${pkgs.coreutils}/bin/sleep 0.25
+      done
     '';
 
     # Toggle the panel between 60 Hz (battery) and 165 Hz (AC) at runtime.
@@ -312,7 +552,6 @@ let
     enable = true;
     autoRepeatDelay = 200;
     autoRepeatInterval = 35;
-    displayManager.lightdm.enable = true; # Login manager
     windowManager.awesome.enable = true;
     windowManager.oxwm.enable = true;
 
@@ -355,6 +594,53 @@ let
       fi
     '';
     };
+
+  # Login manager: SDDM with SilentSDDM and dynamic Pywal integration
+  services.xserver.displayManager.lightdm.enable = false;
+
+  services.displayManager.sddm = {
+    enable = true;
+    package = pkgs.kdePackages.sddm;
+    theme = "silent";
+    extraPackages = with pkgs; [
+      silentSDDMTheme
+      kdePackages.qtsvg
+      kdePackages.qtmultimedia
+      kdePackages.qtvirtualkeyboard
+      kdePackages.qt5compat
+    ];
+    settings = {
+      General = {
+        GreeterEnvironment = "QML2_IMPORT_PATH=${silentSDDMTheme}/share/sddm/themes/silent/components/,QT_IM_MODULE=qtvirtualkeyboard";
+        InputMethod = "qtvirtualkeyboard";
+      };
+    };
+  };
+
+  # Shared cache for pywal template and wallpaper (accessible by SDDM and writable by smalldog)
+  systemd.tmpfiles.rules = [
+    "d /var/cache/wal-sddm 0755 smalldog users -"
+  ];
+
+  # Seed initial fallback wallpaper and configuration if /var/cache/wal-sddm is empty
+  system.activationScripts.sddm-wal-init.text = ''
+    mkdir -p /var/cache/wal-sddm
+    if [ ! -f /var/cache/wal-sddm/wallpaper.png ]; then
+      cp -f ${defaultSddmWallpaper} /var/cache/wal-sddm/wallpaper.png 2>/dev/null || true
+    fi
+    if [ -f /home/smalldog/.cache/wal/silent.conf ]; then
+      cp -f /home/smalldog/.cache/wal/silent.conf /var/cache/wal-sddm/silent.conf 2>/dev/null || true
+    elif [ ! -f /var/cache/wal-sddm/silent.conf ]; then
+      cp -f ${silentSDDMTheme}/share/sddm/themes/silent/configs/default.conf /var/cache/wal-sddm/silent.conf 2>/dev/null || true
+      sed -i 's|background = .*|background = "wal.png"|g' /var/cache/wal-sddm/silent.conf 2>/dev/null || true
+    fi
+    chmod 755 /var/cache/wal-sddm
+    chmod 644 /var/cache/wal-sddm/* 2>/dev/null || true
+    chown -R smalldog:users /var/cache/wal-sddm 2>/dev/null || true
+  '';
+
+  
+
 
 
   # PAM so it can authenticate
@@ -455,6 +741,7 @@ services.picom = {
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
   environment.systemPackages = with pkgs; [
+    silentSDDMTheme
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
     featherpad
@@ -483,11 +770,13 @@ services.picom = {
     xsecurelock
     xidlehook
     xscreensaver
+    imagemagick
     glib
     oxwm-lock-warn
     oxwm-lock-dismiss
     oxwm-lock
-    oxwm-saver-image
+    oxwm-saver-hybrid
+    oxwm-set-win-bg
     oxwm-battery-rate
     psmisc
     jq
@@ -729,6 +1018,12 @@ services.picom = {
   programs.xss-lock = {
     enable = true;
     lockerCommand = "/run/current-system/sw/bin/oxwm-lock";
+  };
+
+  # Prevent xss-lock from hitting StartLimitBurst during the 2s X11 sessionCommands delay
+  systemd.user.services.xss-lock = {
+    unitConfig.StartLimitIntervalSec = 0;
+    serviceConfig.RestartSec = 2;
   };
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.

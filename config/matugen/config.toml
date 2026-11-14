@@ -1,0 +1,84 @@
+[config]
+version_check = false
+fallback_color = "#7aa2f7"
+source_color_index = 0
+caching = false
+
+# ----------------------------------------------------------------------------
+# Base16 templates (st, neovim, btop, yazi, xsecurelock password entry box)
+# ----------------------------------------------------------------------------
+[templates.xresources]
+input_path = "templates/colors.Xresources"
+output_path = "~/.cache/matugen/colors.Xresources"
+
+[templates.sequences]
+input_path = "templates/sequences"
+output_path = "~/.cache/matugen/sequences"
+
+[templates.neovim]
+input_path = "templates/colors-nvim.lua"
+output_path = "~/.cache/matugen/colors-nvim.lua"
+
+[templates.btop]
+input_path = "templates/btop.theme"
+output_path = "~/.cache/matugen/btop.theme"
+
+[templates.yazi]
+input_path = "templates/yazi-theme.toml"
+output_path = "~/.cache/matugen/yazi-theme.toml"
+
+[templates.lock]
+input_path = "templates/colors-lock.sh"
+output_path = "~/.cache/matugen/colors-lock.sh"
+
+# ----------------------------------------------------------------------------
+# Material You templates (SilentSDDM, dunst, rofi, oxwm, Firefox, Obsidian,
+# Anki, Qt5/Qt6 + PCManFM-Qt, GTK 3/4)
+# ----------------------------------------------------------------------------
+[templates.sddm]
+input_path = "templates/silent.conf"
+output_path = "~/.cache/matugen/silent.conf"
+
+[templates.dunst]
+input_path = "templates/dunstrc"
+output_path = "~/.cache/matugen/dunstrc"
+
+[templates.rofi]
+input_path = "templates/rofi-colors.rasi"
+output_path = "~/.cache/matugen/rofi-colors.rasi"
+
+[templates.oxwm]
+input_path = "templates/colors.lua"
+output_path = "~/.cache/matugen/colors.lua"
+
+[templates.firefox]
+input_path = "templates/firefox_websites.css"
+output_path = "~/.config/matugen/generated/firefox_websites.css"
+
+[templates.Obsidian]
+input_path = "templates/obsidian-minimal-matugen-colors.css"
+output_path = "/home/smalldog/Documents/2026-2027 Term 1/.obsidian/snippets/matugen-colors.css"
+
+[templates.anki_qt]
+input_path = "templates/anki-qt.qss"
+output_path = "~/.cache/matugen/anki-qt.qss"
+
+[templates.anki_webview]
+input_path = "templates/anki-webview.css"
+output_path = "~/.cache/matugen/anki-webview.css"
+
+[templates.qt5ct]
+input_path = "templates/qt5ct-colors.conf"
+output_path = "~/.config/qt5ct/colors/matugen.conf"
+
+[templates.qt6ct]
+input_path = "templates/qt6ct-colors.conf"
+output_path = "~/.config/qt6ct/colors/matugen.conf"
+
+[templates.pcmanfm_qt]
+input_path = "templates/pcmanfm-qt.qss"
+output_path = "~/.cache/matugen/pcmanfm-qt.qss"
+
+[templates.gtk]
+input_path = "templates/colors-gtk.css"
+output_path = "~/.cache/matugen/colors-gtk.css"

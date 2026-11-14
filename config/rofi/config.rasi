@@ -28,4 +28,4 @@ configuration {
     kb-mode-next: "Shift+Right,Control+Tab";
     kb-mode-previous: "Shift+Left,Control+ISO_Left_Tab";
 }
-@theme "pywal.rasi"
+@theme "matugen.rasi"

@@ -1,0 +1,131 @@
+# Matugen Base16 theme for Yazi (v26.x schema)
+# Uses terminal ANSI 0-15 / reset colors so live OSC sequences (st) update running Yazi instances immediately.
+
+[app]
+overall = {}
+
+[mgr]
+cwd = { fg = "cyan" }
+
+find_keyword  = { fg = "yellow", bold = true, italic = true, underline = true }
+find_position = { fg = "magenta", bg = "reset", bold = true, italic = true }
+
+symlink_target = { italic = true }
+
+marker_copied   = { fg = "green", bg = "green" }
+marker_cut      = { fg = "red", bg = "red" }
+marker_marked   = { fg = "cyan", bg = "cyan" }
+marker_selected = { fg = "yellow", bg = "yellow" }
+marker_symbol   = "│"
+
+count_copied   = { fg = "black", bg = "green" }
+count_cut      = { fg = "black", bg = "red" }
+count_selected = { fg = "black", bg = "yellow" }
+
+border_symbol = "│"
+border_style  = { fg = "darkgray" }
+
+[tabs]
+active   = { fg = "black", bg = "blue", bold = true }
+inactive = { fg = "white", bg = "darkgray" }
+
+sep_inner = { open = "", close = "" }
+sep_outer = { open = "", close = "" }
+
+[mode]
+normal_main = { fg = "black", bg = "blue", bold = true }
+normal_alt  = { fg = "white", bg = "darkgray" }
+
+select_main = { fg = "black", bg = "magenta", bold = true }
+select_alt  = { fg = "white", bg = "darkgray" }
+
+unset_main = { fg = "black", bg = "red", bold = true }
+unset_alt  = { fg = "white", bg = "darkgray" }
+
+[indicator]
+parent  = { fg = "white", bg = "darkgray" }
+current = { fg = "black", bg = "blue", bold = true }
+preview = { underline = true }
+padding = { open = "", close = "" }
+
+[status]
+overall   = {}
+sep_left  = { open = "", close = "" }
+sep_right = { open = "", close = "" }
+
+perm_sep   = { fg = "darkgray" }
+perm_type  = { fg = "green" }
+perm_read  = { fg = "yellow" }
+perm_write = { fg = "red" }
+perm_exec  = { fg = "cyan" }
+
+progress_label  = { bold = true }
+progress_normal = { fg = "green", bg = "black" }
+progress_error  = { fg = "yellow", bg = "red" }
+
+[which]
+border          = { fg = "blue" }
+mask            = { bg = "black" }
+cand            = { fg = "cyan" }
+rest            = { fg = "darkgray" }
+desc            = { fg = "magenta" }
+separator       = "  "
+separator_style = { fg = "darkgray" }
+
+[confirm]
+border  = { fg = "blue" }
+title   = { fg = "blue" }
+btn_yes = { fg = "black", bg = "blue", bold = true }
+btn_no  = { fg = "gray" }
+
+[spot]
+border   = { fg = "blue" }
+title    = { fg = "blue" }
+tbl_col  = { fg = "blue" }
+tbl_cell = { fg = "black", bg = "yellow" }
+
+[notify]
+title_info  = { fg = "green" }
+title_warn  = { fg = "yellow" }
+title_error = { fg = "red" }
+
+[pick]
+border   = { fg = "blue" }
+active   = { fg = "magenta", bold = true }
+inactive = { fg = "gray" }
+
+[input]
+border   = { fg = "blue" }
+title    = { fg = "blue" }
+value    = { fg = "gray" }
+selected = { fg = "black", bg = "blue" }
+
+[cmp]
+border   = { fg = "blue" }
+active   = { fg = "black", bg = "blue", bold = true }
+inactive = { fg = "gray" }
+
+[tasks]
+border  = { fg = "blue" }
+title   = { fg = "blue" }
+hovered = { fg = "magenta", bold = true }
+
+[help]
+border  = { fg = "blue" }
+chord   = { fg = "cyan" }
+action  = { fg = "gray" }
+hovered = { fg = "black", bg = "blue", bold = true }
+
+[filetype]
+rules = [
+    { mime = "**/image/*", fg = "yellow" },
+    { mime = "**/{audio,video}/*", fg = "magenta" },
+    { mime = "**/application/{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma,compress,archive,cpio,arj,xar,ms-cab*}", fg = "red" },
+    { mime = "**/application/{pdf,doc,rtf}", fg = "cyan" },
+    { mime = "vfs/{absent,stale}", fg = "darkgray" },
+    { url = "*", is = "orphan", fg = "black", bg = "red" },
+    { url = "*", is = "exec",   fg = "green" },
+    { url = "*", is = "dummy",  fg = "black", bg = "red" },
+    { url = "*/", is = "dummy", fg = "black", bg = "red" },
+    { url = "*/", fg = "blue" },
+]

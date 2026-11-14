@@ -1,0 +1,158 @@
+@-moz-document domain("github.com") {
+    :root,
+    [data-color-mode="dark"],
+    [data-dark-theme] {
+        color-scheme: dark !important;
+
+        /* Modern GitHub Primer surface & text tokens */
+        --bgColor-default: var(--background) !important;
+        --bgColor-muted: var(--surface_container_low) !important;
+        --bgColor-inset: var(--surface_container_lowest) !important;
+        --bgColor-emphasis: var(--surface_bright) !important;
+        --bgColor-neutral-muted: var(--surface_container_high) !important;
+        --bgColor-neutral-emphasis: var(--surface_bright) !important;
+
+        /* Borders */
+        --borderColor-default: var(--outline_variant) !important;
+        --borderColor-muted: var(--outline_variant) !important;
+        --borderColor-emphasis: var(--outline) !important;
+
+        /* Text Colors */
+        --fgColor-default: var(--on_surface) !important;
+        --fgColor-muted: var(--on_surface_variant) !important;
+        --fgColor-onEmphasis: var(--on_primary) !important;
+        --fgColor-accent: var(--primary) !important;
+        --fgColor-link: var(--primary) !important;
+        --fgColor-white: var(--on_primary) !important;
+
+        /* Buttons */
+        --button-primary-bgColor-rest: var(--primary) !important;
+        --button-primary-fgColor-rest: var(--on_primary) !important;
+        --button-primary-bgColor-hover: var(--primary_fixed_dim) !important;
+        --button-primary-bgColor-active: var(--primary_fixed) !important;
+        --button-primary-borderColor-rest: var(--primary) !important;
+
+        --button-default-bgColor-rest: var(--surface_container_high) !important;
+        --button-default-fgColor-rest: var(--on_surface) !important;
+        --button-default-bgColor-hover: var(--surface_bright) !important;
+        --button-default-borderColor-rest: var(--outline_variant) !important;
+        --buttonCounter-default-bgColor-rest: var(--surface_container_highest) !important;
+
+        --bgColor-accent-emphasis: var(--primary) !important;
+        --bgColor-accent-muted: var(--primary_container) !important;
+        --borderColor-accent-emphasis: var(--primary) !important;
+        --borderColor-accent-muted: var(--primary_container) !important;
+
+        --bgColor-danger-emphasis: var(--error) !important;
+        --fgColor-danger: var(--error) !important;
+        --button-danger-fgColor-rest: var(--error) !important;
+        --button-danger-bgColor-hover: var(--error_container) !important;
+        --overlay-bgColor: var(--surface_container) !important;
+
+        --bgColor-attention-emphasis: var(--secondary) !important;
+        --borderColor-attention-muted: var(--secondary_container) !important;
+
+        --control-checked-bgColor-rest: var(--primary) !important;
+        --control-checked-bgColor-hover: var(--primary_fixed_dim) !important;
+        --control-checked-bgColor-active: var(--primary_fixed) !important;
+        --controlTrack-bgColor-rest: var(--surface_container_lowest) !important;
+        --controlKnob-bgColor-rest: var(--surface_variant) !important;
+
+        /* Star button */
+        --button-star-iconColor: var(--primary) !important;
+
+        /* Legacy Primer variables still referenced across repo & settings views */
+        --color-canvas-default: var(--background) !important;
+        --color-canvas-subtle: var(--surface_container_low) !important;
+        --color-canvas-inset: var(--surface_container_lowest) !important;
+        --color-canvas-overlay: var(--surface_container) !important;
+        --color-fg-default: var(--on_surface) !important;
+        --color-fg-muted: var(--on_surface_variant) !important;
+        --color-fg-subtle: var(--outline) !important;
+        --color-border-default: var(--outline_variant) !important;
+        --color-border-muted: var(--outline_variant) !important;
+        --color-neutral-muted: var(--surface_container_high) !important;
+        --color-accent-fg: var(--primary) !important;
+        --color-accent-emphasis: var(--primary) !important;
+        --color-accent-muted: var(--primary_container) !important;
+        --color-accent-subtle: var(--primary_container) !important;
+        --color-header-bg: var(--surface_container_low) !important;
+        --color-header-text: var(--on_surface) !important;
+        --color-header-search-bg: var(--surface_container) !important;
+        --color-btn-bg: var(--surface_container_high) !important;
+        --color-btn-text: var(--on_surface) !important;
+        --color-btn-border: var(--outline_variant) !important;
+        --color-btn-hover-bg: var(--surface_bright) !important;
+        --color-btn-primary-bg: var(--primary) !important;
+        --color-btn-primary-text: var(--on_primary) !important;
+        --color-btn-primary-hover-bg: var(--primary_fixed_dim) !important;
+        --color-primer-shadow-inset: 0 1px 0 var(--surface_container_lowest) !important;
+    }
+
+    html,
+    body {
+        background-color: var(--background) !important;
+        color: var(--on_surface) !important;
+    }
+
+    /* Top AppHeader & Repository Navigation */
+    .AppHeader,
+    .AppHeader-globalBar,
+    .AppHeader-localBar,
+    header.Header {
+        background-color: var(--surface_container_low) !important;
+        color: var(--on_surface) !important;
+        border-color: var(--outline_variant) !important;
+    }
+
+    .UnderlineNav-item[aria-current="page"]::after,
+    .UnderlineNav-item.selected::after {
+        background: var(--primary) !important;
+    }
+
+    /* Boxes, Cards, Code Blocks & Overlays */
+    .Box,
+    .Box-header,
+    .SelectMenu-modal,
+    .dropdown-menu,
+    .Popover-message,
+    .timeline-comment,
+    .TimelineItem-badge {
+        background-color: var(--surface_container_low) !important;
+        border-color: var(--outline_variant) !important;
+        color: var(--on_surface) !important;
+    }
+
+    .Box-header,
+    .timeline-comment-header {
+        background-color: var(--surface_container) !important;
+    }
+
+    .markdown-body pre,
+    .markdown-body .highlight pre,
+    pre.highlight,
+    .react-code-file-contents {
+        background-color: var(--surface_container_lowest) !important;
+        border-color: var(--outline_variant) !important;
+    }
+
+    .markdown-body code:not(pre code) {
+        background-color: var(--surface_container_high) !important;
+        color: var(--on_surface) !important;
+    }
+
+    /* Inputs & Focus Rings */
+    input:focus,
+    textarea:focus,
+    select:focus,
+    .form-control:focus {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 2px var(--primary_container) !important;
+    }
+
+    /* Selection & Scrollbars */
+    ::selection {
+        background-color: var(--primary) !important;
+        color: var(--on_primary) !important;
+    }
+}

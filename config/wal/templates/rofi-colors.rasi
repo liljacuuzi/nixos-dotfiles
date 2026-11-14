@@ -1,9 +1,0 @@
-* {
-    bg: {background};
-    hv: {color5};
-    primary: {color8};
-    ug: {color1};
-    kl: {foreground};
-    black: {background};
-    transparent: rgba(0, 0, 0, 0);
-}

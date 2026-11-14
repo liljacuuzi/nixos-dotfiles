@@ -8,7 +8,7 @@ let
     # Fallback wallpaper for SilentSDDM (matches themeswitch default)
     defaultSddmWallpaper = "/home/smalldog/nixos-dotfiles/walls/2560x1600p/tokyo-text.png";
 
-    # Dynamic pywal SilentSDDM theme
+    # Dynamic Matugen SilentSDDM theme (Material You)
     silentSDDMTheme = pkgs.stdenv.mkDerivation {
       pname = "silent";
       version = "unstable";
@@ -17,12 +17,12 @@ let
         mkdir -p $out/share/sddm/themes/silent
         cp -r * $out/share/sddm/themes/silent/
 
-        # Point active config to /var/cache/wal-sddm/silent.conf
-        ln -sfn /var/cache/wal-sddm/silent.conf $out/share/sddm/themes/silent/configs/wal.conf
-        sed -i 's|^ConfigFile=.*|ConfigFile=configs/wal.conf|' $out/share/sddm/themes/silent/metadata.desktop
+        # Point active config to /var/cache/matugen-sddm/silent.conf
+        ln -sfn /var/cache/matugen-sddm/silent.conf $out/share/sddm/themes/silent/configs/matugen.conf
+        sed -i 's|^ConfigFile=.*|ConfigFile=configs/matugen.conf|' $out/share/sddm/themes/silent/metadata.desktop
 
-        # Point active background to /var/cache/wal-sddm/wallpaper.png
-        ln -sfn /var/cache/wal-sddm/wallpaper.png $out/share/sddm/themes/silent/backgrounds/wal.png
+        # Point active background to /var/cache/matugen-sddm/wallpaper.png
+        ln -sfn /var/cache/matugen-sddm/wallpaper.png $out/share/sddm/themes/silent/backgrounds/matugen.png
       '';
     };
 
@@ -34,13 +34,13 @@ let
 
     # ---- Lock screen saver & hybrid frosted wallpaper configuration ----------
     # Flow when locked:
-    #   1. Displays the pre-rendered dual_kawase frosted pywal wallpaper
-    #      (~/.cache/wal/lock-wallpaper.png, with fallback to lockImage)
+    #   1. Displays the pre-rendered dual_kawase frosted wallpaper
+    #      (~/.cache/matugen/lock-wallpaper.png, with fallback to lockImage)
     #   2. After 60s of continuous inactivity while locked, transitions into
     #      a random xscreensaver hack from ~/.xscreensaver
     #   3. Upon any mouse movement or keypress, immediately stops the
     #      xscreensaver hack, restores the frosted dual_kawase wallpaper, and
-    #      opens the pywal-themed auth_x11 password prompt.
+    #      opens the Base16-themed auth_x11 password prompt.
     xsecurelockSettings = {
       # Where the REAL xscreensaver hacks live.
       XSECURELOCK_XSCREENSAVER_PATH = "${pkgs.xscreensaver}/libexec/xscreensaver";
@@ -58,7 +58,7 @@ let
       XSECURELOCK_COMPOSITE_OBSCURER = "0";
       XSECURELOCK_DISCARD_FIRST_KEYPRESS = "0";
 
-      # Fallback TokyoNight (Night) palette styling (overridden dynamically by pywal in oxwm-lock)
+      # Fallback TokyoNight (Night) palette styling (overridden dynamically by matugen Base16 in oxwm-lock)
       XSECURELOCK_BACKGROUND_COLOR = "#1a1b26";
       XSECURELOCK_AUTH_BACKGROUND_COLOR = "#24283b";
       XSECURELOCK_AUTH_FOREGROUND_COLOR = "#c0caf5";
@@ -283,17 +283,17 @@ let
 
       ${exportXsecurelockEnv}
 
-      # Dynamically theme the lockscreen auth box to match active pywal16 colors
-      if [ -f "$HOME/.cache/wal/colors.sh" ]; then
-        . "$HOME/.cache/wal/colors.sh"
+      # Dynamically theme the lockscreen auth box to match active matugen Base16 palette
+      if [ -f "$HOME/.cache/matugen/colors-lock.sh" ]; then
+        . "$HOME/.cache/matugen/colors-lock.sh"
         export XSECURELOCK_BACKGROUND_COLOR="''${background:-#1a1b26}"
-        export XSECURELOCK_AUTH_BACKGROUND_COLOR="''${color0:-#24283b}"
+        export XSECURELOCK_AUTH_BACKGROUND_COLOR="''${auth_background:-#24283b}"
         export XSECURELOCK_AUTH_FOREGROUND_COLOR="''${foreground:-#c0caf5}"
-        export XSECURELOCK_AUTH_WARNING_COLOR="''${color1:-#f7768e}"
-        export XSECURELOCK_DIM_COLOR="''${color0:-#1a1b26}"
+        export XSECURELOCK_AUTH_WARNING_COLOR="''${warning:-#f7768e}"
+        export XSECURELOCK_DIM_COLOR="''${dim:-#1a1b26}"
       fi
 
-      # Ensure ~/.cache/wal/lock-wallpaper.png is up-to-date with current wallpaper & frost settings
+      # Ensure ~/.cache/matugen/lock-wallpaper.png is up-to-date with current wallpaper & frost settings
       if [ -x "$HOME/nixos-dotfiles/scripts/theme-switch.sh" ]; then
         "$HOME/nixos-dotfiles/scripts/theme-switch.sh" --frost-only "''${wallpaper:-}" 2>/dev/null || true
       fi
@@ -304,18 +304,18 @@ let
     '';
 
     # Hybrid xsecurelock saver module:
-    #  - Immediately paints the pre-rendered dual_kawase frosted pywal wallpaper
+    #  - Immediately paints the pre-rendered dual_kawase frosted wallpaper
     #    onto $XSCREENSAVER_WINDOW's X11 background_pixmap via oxwm-set-win-bg.
     #  - Waits for 60s of continuous inactivity via xsecurelock's event-driven
     #    until_nonidle helper before launching saver_xscreensaver.
     #  - On any mouse movement or keypress, immediately stops the xscreensaver
     #    hack, repaints the frosted wallpaper, and sends SIGUSR2 to xsecurelock
-    #    so the pywal-themed auth_x11 password prompt opens immediately.
+    #    so the Base16-themed auth_x11 password prompt opens immediately.
     oxwm-saver-hybrid = pkgs.writeShellScriptBin "saver_oxwm-hybrid" ''
       ${lockEnv}
       [ -n "''${XSCREENSAVER_WINDOW:-}" ] || exec ${pkgs.coreutils}/bin/sleep infinity
 
-      FROSTED_IMG="$HOME/.cache/wal/lock-wallpaper.png"
+      FROSTED_IMG="$HOME/.cache/matugen/lock-wallpaper.png"
       [ -f "$FROSTED_IMG" ] || FROSTED_IMG="${lockImage}"
 
       IDLE_LIMIT="''${XSECURELOCK_SAVER_IDLE_TIMEOUT:-60}"
@@ -432,7 +432,7 @@ let
         exit 1
       fi
 
-      # Repaint wallpaper after rate switch adhering to pywal / theme-switch
+      # Repaint wallpaper after rate switch adhering to active theme-switch wallpaper
       if [ -f "/home/smalldog/.fehbg" ]; then
         ${pkgs.su}/bin/su - smalldog -c "DISPLAY=:0 XAUTHORITY=/home/smalldog/.Xauthority /home/smalldog/.fehbg" 2>/dev/null || true
       fi
@@ -559,8 +559,8 @@ let
     dpi = 144; # 150% scaling (96 is default 100%
     # This avoids the xrandr issue with oxwm, keep this until oxwm fixes it
     displayManager.sessionCommands = ''
-      # Export Qt platform theme so all X11 GUI apps follow GTK / pywal
-      export QT_QPA_PLATFORMTHEME=gtk3
+      # Export Qt platform theme so all X11 GUI apps follow qt5ct / qt6ct Material You palette
+      export QT_QPA_PLATFORMTHEME=qt5ct
 
       # Allow local root to interact with X11 (required for systemd battery/AC hooks)
       ${pkgs.xhost}/bin/xhost +SI:localuser:root || true
@@ -595,7 +595,7 @@ let
     '';
     };
 
-  # Login manager: SDDM with SilentSDDM and dynamic Pywal integration
+  # Login manager: SDDM with SilentSDDM and dynamic Matugen integration
   services.xserver.displayManager.lightdm.enable = false;
 
   services.displayManager.sddm = {
@@ -617,26 +617,26 @@ let
     };
   };
 
-  # Shared cache for pywal template and wallpaper (accessible by SDDM and writable by smalldog)
+  # Shared cache for Matugen SilentSDDM template and wallpaper (accessible by SDDM and writable by smalldog)
   systemd.tmpfiles.rules = [
-    "d /var/cache/wal-sddm 0755 smalldog users -"
+    "d /var/cache/matugen-sddm 0755 smalldog users -"
   ];
 
-  # Seed initial fallback wallpaper and configuration if /var/cache/wal-sddm is empty
-  system.activationScripts.sddm-wal-init.text = ''
-    mkdir -p /var/cache/wal-sddm
-    if [ ! -f /var/cache/wal-sddm/wallpaper.png ]; then
-      cp -f ${defaultSddmWallpaper} /var/cache/wal-sddm/wallpaper.png 2>/dev/null || true
+  # Seed initial fallback wallpaper and configuration if /var/cache/matugen-sddm is empty
+  system.activationScripts.sddm-matugen-init.text = ''
+    mkdir -p /var/cache/matugen-sddm
+    if [ ! -f /var/cache/matugen-sddm/wallpaper.png ]; then
+      cp -f ${defaultSddmWallpaper} /var/cache/matugen-sddm/wallpaper.png 2>/dev/null || true
     fi
-    if [ -f /home/smalldog/.cache/wal/silent.conf ]; then
-      cp -f /home/smalldog/.cache/wal/silent.conf /var/cache/wal-sddm/silent.conf 2>/dev/null || true
-    elif [ ! -f /var/cache/wal-sddm/silent.conf ]; then
-      cp -f ${silentSDDMTheme}/share/sddm/themes/silent/configs/default.conf /var/cache/wal-sddm/silent.conf 2>/dev/null || true
-      sed -i 's|background = .*|background = "wal.png"|g' /var/cache/wal-sddm/silent.conf 2>/dev/null || true
+    if [ -f /home/smalldog/.cache/matugen/silent.conf ]; then
+      cp -f /home/smalldog/.cache/matugen/silent.conf /var/cache/matugen-sddm/silent.conf 2>/dev/null || true
+    elif [ ! -f /var/cache/matugen-sddm/silent.conf ]; then
+      cp -f ${silentSDDMTheme}/share/sddm/themes/silent/configs/default.conf /var/cache/matugen-sddm/silent.conf 2>/dev/null || true
+      sed -i 's|background = .*|background = "matugen.png"|g' /var/cache/matugen-sddm/silent.conf 2>/dev/null || true
     fi
-    chmod 755 /var/cache/wal-sddm
-    chmod 644 /var/cache/wal-sddm/* 2>/dev/null || true
-    chown -R smalldog:users /var/cache/wal-sddm 2>/dev/null || true
+    chmod 755 /var/cache/matugen-sddm
+    chmod 644 /var/cache/matugen-sddm/* 2>/dev/null || true
+    chown -R smalldog:users /var/cache/matugen-sddm 2>/dev/null || true
   '';
 
   
@@ -888,7 +888,7 @@ services.picom = {
     MOZ_X11_EGL = "1";                 # Critical for good X11 performance + VA-API
     MOZ_ENABLE_WAYLAND = "0";          # Force X11 path under OXWM
     LIBVA_DRIVER_NAME = "iHD";    # Explicit Mesa VA-API driver
-    QT_QPA_PLATFORMTHEME = "gtk3";     # Qt apps adopt GTK3 theme & pywal colors
+    QT_QPA_PLATFORMTHEME = "qt5ct";    # Qt5 & Qt6 apps follow qt5ct/qt6ct Material You palette
     # Optional debug / force:
     # MOZ_DISABLE_RDD_SANDBOX = "1";   # Only if you hit sandbox issues with VA-API
     # MOZ_WEBRENDER = "1";

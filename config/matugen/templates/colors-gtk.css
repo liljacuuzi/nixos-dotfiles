@@ -1,0 +1,245 @@
+/*
+ * GTK 3 & GTK 4 Theme Template for matugen (Material You)
+ * Generated dynamically into ~/.cache/matugen/colors-gtk.css
+ */
+
+/* Color Palette Definitions */
+@define-color theme_bg_color {{ colors.surface.default.hex }};
+@define-color theme_fg_color {{ colors.on_surface.default.hex }};
+@define-color theme_base_color {{ colors.surface_container_low.default.hex }};
+@define-color theme_text_color {{ colors.on_surface.default.hex }};
+@define-color theme_selected_bg_color {{ colors.primary.default.hex }};
+@define-color theme_selected_fg_color {{ colors.on_primary.default.hex }};
+@define-color tooltip_bg_color {{ colors.surface_container_highest.default.hex }};
+@define-color tooltip_fg_color {{ colors.on_surface.default.hex }};
+@define-color borders {{ colors.outline_variant.default.hex }};
+@define-color unfocused_borders {{ colors.outline_variant.default.hex }};
+@define-color warning_color {{ colors.tertiary.default.hex }};
+@define-color error_color {{ colors.error.default.hex }};
+@define-color success_color {{ colors.secondary.default.hex }};
+
+/* Common GTK color aliases */
+@define-color bg_color {{ colors.surface.default.hex }};
+@define-color fg_color {{ colors.on_surface.default.hex }};
+@define-color base_color {{ colors.surface_container_low.default.hex }};
+@define-color text_color {{ colors.on_surface.default.hex }};
+@define-color selected_bg_color {{ colors.primary.default.hex }};
+@define-color selected_fg_color {{ colors.on_primary.default.hex }};
+
+/* Libadwaita / GTK4 accent definitions */
+@define-color accent_color {{ colors.primary.default.hex }};
+@define-color accent_bg_color {{ colors.primary.default.hex }};
+@define-color accent_fg_color {{ colors.on_primary.default.hex }};
+@define-color window_bg_color {{ colors.surface.default.hex }};
+@define-color window_fg_color {{ colors.on_surface.default.hex }};
+@define-color view_bg_color {{ colors.surface_container_low.default.hex }};
+@define-color view_fg_color {{ colors.on_surface.default.hex }};
+@define-color headerbar_bg_color {{ colors.surface_container.default.hex }};
+@define-color headerbar_fg_color {{ colors.on_surface.default.hex }};
+@define-color headerbar_border_color {{ colors.outline_variant.default.hex }};
+@define-color card_bg_color {{ colors.surface_container.default.hex }};
+@define-color card_fg_color {{ colors.on_surface.default.hex }};
+@define-color dialog_bg_color {{ colors.surface_container_high.default.hex }};
+@define-color dialog_fg_color {{ colors.on_surface.default.hex }};
+@define-color popover_bg_color {{ colors.surface_container_high.default.hex }};
+@define-color popover_fg_color {{ colors.on_surface.default.hex }};
+
+/* Windows and surfaces */
+window,
+window.background,
+.background,
+dialog,
+messagedialog {
+    background-color: {{ colors.surface.default.hex }};
+    color: {{ colors.on_surface.default.hex }};
+}
+
+/* Header bars & Titlebars */
+headerbar,
+headerbar.default-decoration,
+.titlebar,
+.titlebar:not(headerbar) {
+    background-color: {{ colors.surface_container.default.hex }};
+    background-image: none;
+    color: {{ colors.on_surface.default.hex }};
+    border-bottom: 1px solid {{ colors.outline_variant.default.hex }};
+    box-shadow: none;
+}
+
+headerbar:backdrop,
+.titlebar:backdrop {
+    background-color: {{ colors.surface.default.hex }};
+    background-image: none;
+    color: {{ colors.on_surface_variant.default.hex }};
+}
+
+/* Sidebars, lists, trees, and views */
+list,
+list row,
+row,
+treeview,
+.view,
+iconview,
+.sidebar,
+.lutris-sidebar,
+placessidebar {
+    background-color: {{ colors.surface_container_low.default.hex }};
+    color: {{ colors.on_surface.default.hex }};
+}
+
+list row:hover,
+row:hover,
+.lutris-sidebar row:hover {
+    background-color: {{ colors.surface_container_high.default.hex }};
+}
+
+/* Selections and Highlights across all widgets */
+*:selected,
+selection,
+row:selected,
+list row:selected,
+treeview:selected,
+view:selected,
+iconview:selected,
+.lutris-sidebar row:selected {
+    background-color: {{ colors.primary.default.hex }};
+    color: {{ colors.on_primary.default.hex }};
+}
+
+/* Buttons */
+button {
+    background-color: {{ colors.surface_container.default.hex }};
+    background-image: none;
+    color: {{ colors.on_surface.default.hex }};
+    border: 1px solid {{ colors.outline_variant.default.hex }};
+    border-radius: 4px;
+    box-shadow: none;
+    text-shadow: none;
+    transition: all 150ms ease;
+}
+
+button:hover {
+    background-color: {{ colors.primary.default.hex }};
+    background-image: none;
+    color: {{ colors.on_primary.default.hex }};
+    border-color: {{ colors.primary.default.hex }};
+}
+
+button:active,
+button:checked {
+    background-color: {{ colors.primary_fixed_dim.default.hex }};
+    background-image: none;
+    color: {{ colors.on_primary.default.hex }};
+    border-color: {{ colors.primary.default.hex }};
+}
+
+button.suggested-action {
+    background-color: {{ colors.primary.default.hex }};
+    background-image: none;
+    color: {{ colors.on_primary.default.hex }};
+    border-color: {{ colors.primary.default.hex }};
+}
+
+button.destructive-action {
+    background-color: {{ colors.error.default.hex }};
+    background-image: none;
+    color: {{ colors.on_error.default.hex }};
+    border-color: {{ colors.error.default.hex }};
+}
+
+/* Inputs & Entries */
+entry {
+    background-color: {{ colors.surface_container_low.default.hex }};
+    background-image: none;
+    color: {{ colors.on_surface.default.hex }};
+    border: 1px solid {{ colors.outline_variant.default.hex }};
+    border-radius: 4px;
+    box-shadow: none;
+}
+
+entry:focus {
+    border-color: {{ colors.primary.default.hex }};
+}
+
+/* Notebook tabs */
+notebook {
+    background-color: {{ colors.surface.default.hex }};
+}
+
+notebook > header {
+    background-color: {{ colors.surface.default.hex }};
+    border-color: {{ colors.outline_variant.default.hex }};
+    box-shadow: none;
+}
+
+notebook > header tab {
+    background-color: {{ colors.surface_container.default.hex }};
+    background-image: none;
+    color: {{ colors.on_surface_variant.default.hex }};
+    border: 1px solid {{ colors.outline_variant.default.hex }};
+}
+
+notebook > header tab:checked {
+    background-color: {{ colors.surface.default.hex }};
+    background-image: none;
+    color: {{ colors.on_surface.default.hex }};
+    border-bottom: 2px solid {{ colors.primary.default.hex }};
+}
+
+/* Menus & Popovers */
+menu,
+.menu,
+popover,
+popover.background {
+    background-color: {{ colors.surface_container_high.default.hex }};
+    color: {{ colors.on_surface.default.hex }};
+    border: 1px solid {{ colors.outline_variant.default.hex }};
+}
+
+menuitem:hover,
+modelbutton:hover {
+    background-color: {{ colors.primary.default.hex }};
+    color: {{ colors.on_primary.default.hex }};
+}
+
+/* Scrollbars */
+scrollbar {
+    background-color: transparent;
+}
+
+scrollbar slider {
+    background-color: {{ colors.outline_variant.default.hex }};
+    border-radius: 4px;
+    min-width: 6px;
+    min-height: 6px;
+}
+
+scrollbar slider:hover {
+    background-color: {{ colors.primary.default.hex }};
+}
+
+/* Progress bars */
+progressbar progress {
+    background-color: {{ colors.primary.default.hex }};
+    border-radius: 2px;
+}
+
+/* Switches & Checkboxes */
+switch:checked {
+    background-color: {{ colors.primary.default.hex }};
+    color: {{ colors.on_primary.default.hex }};
+}
+
+checkbutton check:checked,
+radiobutton radio:checked {
+    background-color: {{ colors.primary.default.hex }};
+    color: {{ colors.on_primary.default.hex }};
+}
+
+/* Tooltips */
+tooltip,
+tooltip.background {
+    background-color: @tooltip_bg_color;
+    color: @tooltip_fg_color;
+    border: 1px solid @borders;
+}

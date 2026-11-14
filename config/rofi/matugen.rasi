@@ -1,8 +1,8 @@
 /*
- * Pywal theme for rofi
+ * Matugen Material You theme for rofi
  */
 
-@import "~/.cache/wal/rofi-colors.rasi"
+@import "~/.cache/matugen/rofi-colors.rasi"
 
 * {
     font: "Monospace 11";
@@ -16,7 +16,7 @@ window {
     location: center;
     anchor: center;
     transparency: "screenshot";
-    border-color: @transparent;   
+    border-color: @transparent;
     border: 0px;
     border-radius: 6px;
     spacing: 0;
@@ -60,7 +60,7 @@ listview {
     padding: 8px;
     lines: 7;
     columns: 2;
-    border: 0px 3px 3px 3px; 
+    border: 0px 3px 3px 3px;
     border-radius: 0px 0px 6px 6px;
     border-color: @primary;
     dynamic: false;
@@ -96,12 +96,13 @@ element-icon {
 }
 
 element normal urgent {
-    background-color: @primary;
+    background-color: @ug;
+    color: @black;
 }
 
 element selected active {
-    background: @hv;
-    foreground: @bg;
+    background-color: @hv;
+    color: @black;
 }
 
 button {

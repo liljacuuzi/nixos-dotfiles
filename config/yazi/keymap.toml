@@ -14,8 +14,14 @@ on   = [ "g", "u" ]
 run  = "cd /run/media/smalldog"
 desc = "Go to USB drive (/run/media/smalldog)"
 
+# Run themeswitch on the selected file
 [[mgr.prepend_keymap]]
 on   = [ "g", "m" ]
-run  = "cd /run/media/smalldog"
-desc = "Go to media (/run/media/smalldog)"
+run  = 'shell "$HOME/nixos-dotfiles/scripts/theme-switch.sh %s" --orphan'
+desc = "Run themeswitch on selected file"
 
+# Jump to wallpapers directory
+[[mgr.prepend_keymap]]
+on   = [ "g", "w" ]
+run  = "cd ~/nixos-dotfiles/walls"
+desc = "Go to wallpapers (~/nixos-dotfiles/walls)"

@@ -15,8 +15,8 @@ local modkey = "Mod4"
 local terminal = "st"
 -- Set default layout for all tags
 oxwm.set_layout("dwindle")
--- Color palette - loads pywal generated colors if available, with tokyonight fallback
-package.path = os.getenv("HOME") .. "/.cache/wal/?.lua;" .. package.path
+-- Color palette - loads matugen generated colors if available, with tokyonight fallback
+package.path = os.getenv("HOME") .. "/.cache/matugen/?.lua;" .. package.path
 local ok, colors = pcall(require, "colors")
 if not ok then
     colors = require("tokyonight")
@@ -24,7 +24,7 @@ end
 -- local tags = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }
 local tags = { "[1]", "[2]", "[3]", "[4]", "[5]", "[6]", "[7]", "[8]", "[9]" } -- Example of nerd font icon tags
 local bar_font = "JetBrainsMono Nerd Font Propo:style=Bold:size=12"
--- Unified block color matching pywal with distinct divider color
+-- Unified block color matching matugen Material You palette with distinct divider color
 local block_color = colors.block_fg or colors.blue or colors.light_blue
 local divider_color = colors.sep or colors.grey
 
@@ -190,8 +190,8 @@ screen_lock.setup()
 -- Commands to run once when OXWM starts
 -- Uncomment and modify these examples, or add your own
 -- oxwm.autostart("picom")
--- Restore last pywal wallpaper and colors across reboots, with fallback
+-- Restore last matugen wallpaper and colors across reboots, with fallback
 oxwm.autostart(
-    "sh -c 'wal -R || (test -f ~/.fehbg && ~/.fehbg) || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png'")
+    "sh -c 'if [ -f ~/.cache/matugen/colors.lua ] && [ -f ~/.cache/matugen/wallpaper ]; then feh --bg-scale \"$(cat ~/.cache/matugen/wallpaper)\"; else ~/nixos-dotfiles/scripts/theme-switch.sh --restore || (test -f ~/.fehbg && ~/.fehbg) || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png; fi'")
 oxwm.autostart("dunst") -- make sure dunst is running for the notifications
 -- oxwm.autostart("nm-applet")

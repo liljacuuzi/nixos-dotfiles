@@ -13,10 +13,50 @@ let
     st = "st";
     dunst = "dunst";
     btop = "btop";
-    yazi = "yazi";
-    wal = "wal";
+    "yazi/keymap.toml" = "yazi/keymap.toml";
+    "yazi/yazi.toml" = "yazi/yazi.toml";
+    matugen = "matugen";
+    dusky_sites = "dusky_sites";
     "gtk-3.0" = "gtk-3.0";
     "gtk-4.0" = "gtk-4.0";
+  };
+
+  matugenfox-src = pkgs.fetchFromGitHub {
+    owner = "Ubaidullah-Web-Dev";
+    repo = "MatugenFox";
+    rev = "1eb7365ff03c859a5be18f422e2b630e4a248ab9";
+    hash = "sha256-+sDvETSmJLrLNY6jnHNpUeScC+H3Brbhc+DE2lJn1cM=";
+  };
+
+  matugenfox-native = pkgs.stdenv.mkDerivation {
+    pname = "matugenfox-native";
+    version = "unstable-2026-07-28";
+    src = matugenfox-src;
+    dontBuild = true;
+    installPhase = ''
+      mkdir -p $out/bin $out/share/matugenfox/websites $out/lib/mozilla/native-messaging-hosts
+
+      cp matugenfox_host.py $out/share/matugenfox/matugenfox_host.py
+      substituteInPlace $out/share/matugenfox/matugenfox_host.py \
+        --replace-fail \
+          "(\"Firefox\",   os.path.join(home, '.mozilla', 'firefox'))," \
+          "(\"Firefox (XDG)\", os.path.join(home, '.config', 'mozilla', 'firefox')), (\"Firefox\", os.path.join(home, '.mozilla', 'firefox')),"
+      cp "Website Templates/"*.css $out/share/matugenfox/websites/
+
+      printf '#!%s\nexec %s/bin/python3 %s/share/matugenfox/matugenfox_host.py "$@"\n' \
+        "${pkgs.runtimeShell}" "${pkgs.python3}" "$out" > $out/bin/matugenfox-host
+      chmod +x $out/bin/matugenfox-host
+
+      cat > $out/lib/mozilla/native-messaging-hosts/matugenfox.json <<EOF
+      {
+        "name": "matugenfox",
+        "description": "MatugenFox native messaging host for dynamic Material You Firefox theming",
+        "path": "$out/bin/matugenfox-host",
+        "type": "stdio",
+        "allowed_extensions": [ "matugenfox@ubaid.com" ]
+      }
+      EOF
+    '';
   };
 in
   {
@@ -54,7 +94,7 @@ in
         batenable = "sudo legion_cli --donotexpecthwmon batteryconservation-enable";
         batdisable = "sudo legion_cli --donotexpecthwmon batteryconservation-disable";
 
-        # Pywal theme switch shortcut
+        # Matugen theme switch shortcut
         themeswitch = "$HOME/nixos-dotfiles/scripts/theme-switch.sh";
 
         # Colorized shell output
@@ -69,10 +109,10 @@ in
     
 
     initExtra = ''
-      # Apply pywal colors to every newly spawned terminal/shell
-      [ -f "$HOME/.cache/wal/sequences" ] && cat "$HOME/.cache/wal/sequences"
+      # Apply matugen Base16 colors to every newly spawned terminal/shell
+      [ -f "$HOME/.cache/matugen/sequences" ] && cat "$HOME/.cache/matugen/sequences"
 
-      # Distinct file and directory colors using pywal terminal ANSI palette
+      # Distinct file and directory colors using terminal ANSI palette
       export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.zip=01;31:*.zst=01;31:*.7z=01;31:*.rar=01;31:*.gz=01;31:*.bz2=01;31:*.xz=01;31:*.png=01;35:*.jpg=01;35:*.jpeg=01;35:*.webp=01;35:*.gif=01;35:*.svg=01;35:*.bmp=01;35:*.ico=01;35:*.mp4=01;33:*.mkv=01;33:*.webm=01;33:*.avi=01;33:*.mov=01;33:*.mp3=00;36:*.flac=00;36:*.wav=00;36:*.ogg=00;36:*.m4a=00;36:*.opus=00;36:*.nix=01;36:*.lua=01;34:*.sh=01;32:*.bash=01;32:*.py=01;32:*.rs=01;31:*.go=01;36:*.c=01;33:*.h=01;33:*.cpp=01;33:*.js=01;33:*.ts=01;34:*.json=00;33:*.toml=00;33:*.yaml=00;33:*.yml=00;33:*.conf=00;36:*.rasi=00;36:*.pdf=01;31:*.md=01;37:*.txt=00;37:*~=00;90:*.bak=00;90:*.tmp=00;90:*.swp=00;90:*.lock=00;90:'
       export PS1='\[\e[38;5;40m\]\u\[\e[0m\] in \[\e[38;5;33m\]\w\[\e[0m\] \\$ '
     '';
@@ -93,7 +133,8 @@ in
       name = "pcmanfm-qt";
       paths = [
         (writeShellScriptBin "pcmanfm-qt" ''
-          QSS="''${XDG_CACHE_HOME:-$HOME/.cache}/wal/pcmanfm-qt.qss"
+          export QT_QPA_PLATFORMTHEME="qt5ct"
+          QSS="''${XDG_CACHE_HOME:-$HOME/.cache}/matugen/pcmanfm-qt.qss"
           if [ -f "$QSS" ]; then
             exec ${pcmanfm-qt}/bin/pcmanfm-qt -stylesheet "$QSS" "$@"
           else
@@ -109,8 +150,7 @@ in
     _7zz
     # antigravity-cli
     inputs.antigravity-nix.packages.${pkgs.system}.google-antigravity-cli
-    pywal16
-    pywalfox-native
+    matugen
     xdotool
     xsettingsd
     glib
@@ -118,7 +158,7 @@ in
   ];
 
   home.sessionVariables = {
-    QT_QPA_PLATFORMTHEME = "gtk3";
+    QT_QPA_PLATFORMTHEME = "qt5ct";
   };
 
   services.redshift = {
@@ -166,7 +206,7 @@ services.udiskie = {
   gtk = {
     enable = true;
     theme = {
-      name = "wal-a";
+      name = "matugen-a";
     };
     iconTheme = {
       name = "Papirus-Dark";
@@ -178,14 +218,29 @@ services.udiskie = {
 
   # DConf / GSettings interface configuration
   dconf.settings."org/gnome/desktop/interface" = {
-    gtk-theme = "wal-a";
+    gtk-theme = "matugen-a";
     icon-theme = "Papirus-Dark";
     color-scheme = "prefer-dark";
   };
 
+  # Global Qt5 & Qt6 Material You palette via qt5ct / qt6ct
   qt = {
     enable = true;
-    platformTheme.name = "gtk3";
+    platformTheme.name = "qtct";
+    qt5ctSettings.Appearance = {
+      style = "Fusion";
+      custom_palette = true;
+      color_scheme_path = "${config.home.homeDirectory}/.config/qt5ct/colors/matugen.conf";
+      icon_theme = "Papirus-Dark";
+      standard_dialogs = "gtk3";
+    };
+    qt6ctSettings.Appearance = {
+      style = "Fusion";
+      custom_palette = true;
+      color_scheme_path = "${config.home.homeDirectory}/.config/qt6ct/colors/matugen.conf";
+      icon_theme = "Papirus-Dark";
+      standard_dialogs = "gtk3";
+    };
   };
 
   # Broadcast GTK & icon theme to running X11 apps via xsettings
@@ -196,63 +251,66 @@ services.udiskie = {
 
   systemd.user.services.xsettingsd.Service.ExecStart = lib.mkForce "${pkgs.xsettingsd}/bin/xsettingsd -c %h/.config/xsettingsd/xsettingsd.conf";
 
-  # Dynamic Pywal GTK themes (wal-a & wal-b for live hot-reloading)
-  xdg.dataFile."themes/wal-a/gtk-3.0/gtk.css".text = ''
+  # Dynamic Matugen GTK themes (matugen-a & matugen-b for live hot-reloading)
+  xdg.dataFile."themes/matugen-a/gtk-3.0/gtk.css".text = ''
     @import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");
-    @import url("file://${config.home.homeDirectory}/.cache/wal/colors-gtk.css");
+    @import url("file://${config.home.homeDirectory}/.cache/matugen/colors-gtk.css");
   '';
-  xdg.dataFile."themes/wal-a/gtk-4.0/gtk.css".text = ''
-    @import url("file://${config.home.homeDirectory}/.cache/wal/colors-gtk.css");
+  xdg.dataFile."themes/matugen-a/gtk-4.0/gtk.css".text = ''
+    @import url("file://${config.home.homeDirectory}/.cache/matugen/colors-gtk.css");
   '';
-  xdg.dataFile."themes/wal-a/index.theme".text = ''
+  xdg.dataFile."themes/matugen-a/index.theme".text = ''
     [Desktop Entry]
     Type=X-GNOME-Metatheme
-    Name=wal-a
-    Comment=Pywal Dynamic Theme A
+    Name=matugen-a
+    Comment=Matugen Dynamic Theme A
     Encoding=UTF-8
 
     [X-GNOME-Metatheme]
-    GtkTheme=wal-a
+    GtkTheme=matugen-a
     IconTheme=Papirus-Dark
   '';
 
-  xdg.dataFile."themes/wal-b/gtk-3.0/gtk.css".text = ''
+  xdg.dataFile."themes/matugen-b/gtk-3.0/gtk.css".text = ''
     @import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");
-    @import url("file://${config.home.homeDirectory}/.cache/wal/colors-gtk.css");
+    @import url("file://${config.home.homeDirectory}/.cache/matugen/colors-gtk.css");
   '';
-  xdg.dataFile."themes/wal-b/gtk-4.0/gtk.css".text = ''
-    @import url("file://${config.home.homeDirectory}/.cache/wal/colors-gtk.css");
+  xdg.dataFile."themes/matugen-b/gtk-4.0/gtk.css".text = ''
+    @import url("file://${config.home.homeDirectory}/.cache/matugen/colors-gtk.css");
   '';
-  xdg.dataFile."themes/wal-b/index.theme".text = ''
+  xdg.dataFile."themes/matugen-b/index.theme".text = ''
     [Desktop Entry]
     Type=X-GNOME-Metatheme
-    Name=wal-b
-    Comment=Pywal Dynamic Theme B
+    Name=matugen-b
+    Comment=Matugen Dynamic Theme B
     Encoding=UTF-8
 
     [X-GNOME-Metatheme]
-    GtkTheme=wal-b
+    GtkTheme=matugen-b
     IconTheme=Papirus-Dark
   '';
 
   # Legacy & Flatpak / user icon & theme compatibility
-  home.file.".themes/wal-a".source = create_symlink "${config.home.homeDirectory}/.local/share/themes/wal-a";
-  home.file.".themes/wal-b".source = create_symlink "${config.home.homeDirectory}/.local/share/themes/wal-b";
+  home.file.".themes/matugen-a".source = create_symlink "${config.home.homeDirectory}/.local/share/themes/matugen-a";
+  home.file.".themes/matugen-b".source = create_symlink "${config.home.homeDirectory}/.local/share/themes/matugen-b";
   home.file.".icons/Papirus-Dark".source = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark";
   home.file.".icons/Papirus".source = "${pkgs.papirus-icon-theme}/share/icons/Papirus";
   xdg.dataFile."icons/Papirus-Dark".source = "${pkgs.papirus-icon-theme}/share/icons/Papirus-Dark";
   xdg.dataFile."icons/Papirus".source = "${pkgs.papirus-icon-theme}/share/icons/Papirus";
 
-  # Anki pywal theme addon integration
-  home.file.".local/share/Anki2/addons21/pywal".source = create_symlink "${dotfiles}/anki/addons21/pywal";
-        
-  # symlink ~/.config to ~/nixos-dotfiles/config/ 
-  xdg.configFile = builtins.mapAttrs (name: subpath: {
+  # Anki matugen theme addon integration
+  home.file.".local/share/Anki2/addons21/matugen".source = create_symlink "${dotfiles}/anki/addons21/matugen";
+
+  # symlink ~/.config to ~/nixos-dotfiles/config/, plus dynamic Yazi theme
+  xdg.configFile = (builtins.mapAttrs (name: subpath: {
     source = create_symlink "${dotfiles}/${subpath}";
-  }) configs;
-  
+  }) configs) // {
+    "yazi/theme.toml".source = create_symlink "${config.home.homeDirectory}/.cache/matugen/yazi-theme.toml";
+  };
+
  programs.firefox = {
   enable = true;
+  nativeMessagingHosts = [ matugenfox-native ];
 
   policies = {
     ExtensionSettings = {
@@ -265,13 +323,12 @@ services.udiskie = {
         install_url = "https://addons.mozilla.org/firefox/downloads/latest/addon@darkreader.org/latest.xpi";
         installation_mode = "force_installed";
       };
-      "pywalfox@frewacom.org" = {
-        install_url = "https://addons.mozilla.org/firefox/downloads/latest/pywalfox/latest.xpi";
+      "matugenfox@ubaid.com" = {
+        install_url = "https://addons.mozilla.org/firefox/downloads/latest/matugenfox/latest.xpi";
         installation_mode = "force_installed";
       };
-      "tokyo-night-v3" = {
-        install_url = "https://addons.mozilla.org/firefox/downloads/latest/tokyo-night-v3/latest.xpi";
-        installation_mode = "force_installed";
+      "pywalfox@frewacom.org" = {
+        installation_mode = "blocked";
       };
     };
   };

@@ -1,5 +1,5 @@
 -- Strip opaque backgrounds so nvim inherits st's own transparency (alpha = 0.90),
--- exactly like tokyonight's `transparent = true` did before pywal was added.
+-- exactly like tokyonight's `transparent = true` did before matugen was added.
 local transparent_groups = {
     "Normal", "NormalNC", "NormalFloat", "FloatBorder", "FloatTitle",
     "SignColumn", "FoldColumn", "LineNr", "CursorLineNr", "EndOfBuffer",
@@ -23,16 +23,14 @@ local function make_transparent()
     end
 end
 
--- Re-apply whenever a colorscheme loads (including `:colorscheme pywal` sent by theme-switch.sh)
+-- Re-apply whenever a colorscheme loads (including `:colorscheme matugen` sent by theme-switch.sh)
 vim.api.nvim_create_autocmd("ColorScheme", {
     group = vim.api.nvim_create_augroup("TransparentBackground", { clear = true }),
     callback = make_transparent,
 })
 
-local pywal_ok, pywal = pcall(require, "pywal")
-if pywal_ok and vim.fn.filereadable(vim.fn.expand("~/.cache/wal/colors.json")) == 1 then
-    pywal.setup()
-    vim.cmd.colorscheme("pywal")
+if vim.fn.filereadable(vim.fn.expand("~/.cache/matugen/colors-nvim.lua")) == 1 then
+    vim.cmd.colorscheme("matugen")
 else
     local status, tokyonight = pcall(require, "tokyonight")
     if not status then return end

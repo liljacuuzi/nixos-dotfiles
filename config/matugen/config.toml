@@ -52,9 +52,9 @@ output_path = "~/.cache/matugen/bat.tmTheme"
 input_path = "templates/alacritty-colors.toml"
 output_path = "~/.cache/matugen/alacritty-colors.toml"
 
-[templates.lock]
-input_path = "templates/colors-lock.sh"
-output_path = "~/.cache/matugen/colors-lock.sh"
+[templates.qylock]
+input_path = "templates/qylock-colors.json"
+output_path = "~/.cache/matugen/qylock-colors.json"
 
 # ----------------------------------------------------------------------------
 # Material You templates (SilentSDDM, dunst, rofi, oxwm, Firefox, Obsidian,

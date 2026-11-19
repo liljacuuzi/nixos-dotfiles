@@ -11,68 +11,10 @@ set -e
 # ==============================================================================
 MATUGEN_SCHEME="scheme-fidelity"
 
-# ==============================================================================
-# FROSTED LOCKSCREEN SETTINGS (dual_kawase + frosted glass effect)
-# Modify any of these values to tune how frosted your lockscreen looks!
-# Changes take effect automatically the next time you press Super+Shift+L
-# (or run `themeswitch` / `themeswitch --frost-only`).
-# ==============================================================================
-FROST_BLUR_STRENGTH="2.5"  # Blur sigma per Kawase pass (0.5 = crisp, 2.5 = medium frost, 6.0 = heavy blur)
-FROST_DOWNSAMPLE="60"      # Kawase downsample % (10 = ultra-wide dreamy blur, 25 = balanced, 60 = very light)
-FROST_WHITE_GLAZE="12"     # Milky white frosted glass sheen % (0 = none, 12 = frosted glass, 25 = icy white)
-FROST_THEME_TINT="0"       # Theme background tint % (0 = original colors, 6 = subtle tint; >15 will darken the image)
-FROST_GRAIN="0.11"         # Etched glass micro-grain (0 = smooth blur, 0.22 = frosted texture, 0.50 = sandblasted)
-
 CACHE_DIR="$HOME/.cache/matugen"
 DEFAULT_WALLPAPER="$HOME/nixos-dotfiles/walls/2560x1600p/tokyo-text.png"
 MATUGEN_CONFIG="$HOME/.config/matugen/config.toml"
 [ -f "$MATUGEN_CONFIG" ] || MATUGEN_CONFIG="$HOME/nixos-dotfiles/config/matugen/config.toml"
-
-generate_frosted_lock_wallpaper() {
-    local src_wall="$1"
-    if [ ! -f "$src_wall" ] && [ -f "$CACHE_DIR/wallpaper" ]; then
-        src_wall="$(cat "$CACHE_DIR/wallpaper")"
-    fi
-    if [ ! -f "$src_wall" ]; then
-        src_wall="$DEFAULT_WALLPAPER"
-    fi
-    [ -f "$src_wall" ] || return 0
-    command -v magick >/dev/null 2>&1 || return 0
-
-    mkdir -p "$CACHE_DIR"
-    local bg_hex="#1a1b26"
-    if [ -f "$CACHE_DIR/colors-lock.sh" ]; then
-        bg_hex="$(grep -E "^background=" "$CACHE_DIR/colors-lock.sh" | cut -d"'" -f2)"
-    fi
-
-    local sig="v2|${src_wall}|${FROST_BLUR_STRENGTH}|${FROST_DOWNSAMPLE}|${FROST_WHITE_GLAZE}|${FROST_THEME_TINT}|${FROST_GRAIN}|${bg_hex}"
-    if [ -f "$CACHE_DIR/lock-wallpaper.png" ] && [ -f "$CACHE_DIR/lock-wallpaper.sig" ]; then
-        if [ "$(cat "$CACHE_DIR/lock-wallpaper.sig" 2>/dev/null)" = "$sig" ]; then
-            return 0
-        fi
-    fi
-
-    # Dual-Kawase downsample -> etched grain -> upsample -> theme tint -> milky frost glaze
-    magick "$src_wall" \
-        -resize 2560x1600^ -gravity center -extent 2560x1600 \
-        -filter Triangle \
-        -resize "${FROST_DOWNSAMPLE}%" -blur "0x${FROST_BLUR_STRENGTH}" \
-        -resize 60% -blur "0x${FROST_BLUR_STRENGTH}" \
-        -attenuate "$FROST_GRAIN" +noise Gaussian \
-        -resize 166% -blur "0x1.2" \
-        -resize 2560x1600! \
-        -fill "${bg_hex:-#1a1b26}" -colorize "${FROST_THEME_TINT}%" \
-        -fill "#ffffff" -colorize "${FROST_WHITE_GLAZE}%" \
-        -define png:compression-level=1 \
-        "$CACHE_DIR/lock-wallpaper.tmp.png" 2>/dev/null && \
-    mv -f "$CACHE_DIR/lock-wallpaper.tmp.png" "$CACHE_DIR/lock-wallpaper.png" && \
-    printf '%s' "$sig" > "$CACHE_DIR/lock-wallpaper.sig"
-}
-
-if [ "$1" = "--frost-only" ]; then
-    generate_frosted_lock_wallpaper "$2"
-    exit 0
-fi
 
 SCHEME="$MATUGEN_SCHEME"
 HEX_COLOR=""
@@ -102,7 +44,7 @@ while [ "$#" -gt 0 ]; do
             shift
             ;;
         -h|--help)
-            echo "Usage: $(basename "$0") [/path/to/wallpaper.png] [-t|--type <scheme>] [--color \"#RRGGBB\"] [--restore] [--frost-only [wallpaper]]"
+            echo "Usage: $(basename "$0") [/path/to/wallpaper.png] [-t|--type <scheme>] [--color \"#RRGGBB\"] [--restore]"
             echo "   or: echo /path/to/wallpaper.png | $(basename "$0")"
             exit 0
             ;;
@@ -142,16 +84,12 @@ elif [ -f "$WALLPAPER" ]; then
     fi
 else
     echo "Error: File '$WALLPAPER' not found." >&2
-    echo "Usage: $(basename "$0") [/path/to/wallpaper.png] [-t|--type <scheme>] [--color \"#RRGGBB\"] [--restore] [--frost-only [wallpaper]]" >&2
+    echo "Usage: $(basename "$0") [/path/to/wallpaper.png] [-t|--type <scheme>] [--color \"#RRGGBB\"] [--restore]" >&2
     echo "   or: echo /path/to/wallpaper.png | $(basename "$0")" >&2
     exit 1
 fi
 
 printf '%s' "$SCHEME" > "$CACHE_DIR/scheme"
-
-echo "==> Generating dual_kawase frosted lockscreen wallpaper..."
-generate_frosted_lock_wallpaper "$WALLPAPER" &
-FROST_PID=$!
 
 echo "==> Updating SilentSDDM theme..."
 SDDM_MATUGEN_DIR="/var/cache/matugen-sddm"
@@ -288,7 +226,5 @@ for ver in gtk-3.0 gtk-4.0; do
         sed -i "s/gtk-theme-name = .*/gtk-theme-name = $NEXT_THEME/" "$HOME/.config/$ver/settings.ini" 2>/dev/null || true
     fi
 done
-
-wait "$FROST_PID" 2>/dev/null || true
 
 echo "==> Theme switch complete!"

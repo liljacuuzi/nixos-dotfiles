@@ -27,9 +27,14 @@
       url = "github:uiriansan/SilentSDDM";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    qylock = {
+      url = "github:Darkkal44/qylock";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, nix-flatpak, xlibre-overlay, nix-cachyos-kernel, antigravity-nix, silentSDDM, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, nix-flatpak, xlibre-overlay, nix-cachyos-kernel, antigravity-nix, silentSDDM, qylock, ... }@inputs:
   let
     system = "x86_64-linux";
     pkgs = import nixpkgs { 

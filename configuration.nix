@@ -26,56 +26,123 @@ let
       '';
     };
 
-    # ---- Your lock background ------------------------------------------------
-    # Interpolated directly into the saver script at build time (xsecurelock
-    # scrubs the environment before spawning children, so env vars can't be
-    # relied upon inside savers).
-    lockImage = "/home/smalldog/nixos-dotfiles/walls/purple-sun-blurred.png";
+    # ---- Dynamic Matugen qylock (material-you-dark) screenlock ---------------
+    # Lean package derived from inputs.qylock containing only quickshell-lockscreen
+    # and our Matugen-enabled material-you-dark theme (reading ~/.cache/matugen/qylock-colors.json).
+    qylockMatugen = pkgs.stdenvNoCC.mkDerivation {
+      pname = "qylock-matugen";
+      version = "unstable";
+      src = inputs.qylock;
+      nativeBuildInputs = [ pkgs.makeWrapper ];
+      dontBuild = true;
+      installPhase = ''
+        runHook preInstall
 
-    # ---- Lock screen saver & hybrid frosted wallpaper configuration ----------
-    # Flow when locked:
-    #   1. Displays the pre-rendered dual_kawase frosted wallpaper
-    #      (~/.cache/matugen/lock-wallpaper.png, with fallback to lockImage)
-    #   2. After 60s of continuous inactivity while locked, transitions into
-    #      a random xscreensaver hack from ~/.xscreensaver
-    #   3. Upon any mouse movement or keypress, immediately stops the
-    #      xscreensaver hack, restores the frosted dual_kawase wallpaper, and
-    #      opens the Material You-themed auth_x11 password prompt.
-    xsecurelockSettings = {
-      # Where the REAL xscreensaver hacks live.
-      XSECURELOCK_XSCREENSAVER_PATH = "${pkgs.xscreensaver}/libexec/xscreensaver";
+        mkdir -p $out/share/qylock/themes/material-you-dark
+        cp -r quickshell-lockscreen/. $out/share/qylock/
+        cp -r themes/material-you-dark/. $out/share/qylock/themes/material-you-dark/
 
-      # Hybrid saver: frosted dual_kawase wallpaper <-> xscreensaver on idle
-      XSECURELOCK_SAVER = "${oxwm-saver-hybrid}/bin/saver_oxwm-hybrid";
-      XSECURELOCK_SAVER_RESET_ON_AUTH_CLOSE = "1";
-      XSECURELOCK_SAVER_IDLE_TIMEOUT = "60";    # 60s on frosted wallpaper before xscreensaver starts
-      XSECURELOCK_SAVER_DELAY_MS = "80";        # Let saver paint frosted image before mapping window
+        # Install our Matugen-enabled material-you-dark Main.qml
+        cp ${./config/qylock/Main.qml} $out/share/qylock/themes/material-you-dark/Main.qml
 
-      XSECURELOCK_BLANK_TIMEOUT = "1800";       # DPMS-off 30 min into lock
-      XSECURELOCK_SAVER_STOP_ON_BLANK = "1";
+        # Patch SddmShim.qml:
+        #  1. Add missing suspend() for the Sleep quick-settings tile
+        #  2. Include NixOS xsession/wayland-session paths so Session shows OXWM
+        #  3. Authenticate against dedicated NixOS PAM service "qylock"
+        substituteInPlace $out/share/qylock/shim/SddmShim.qml \
+          --replace-fail \
+            'for f in /usr/share/wayland-sessions/*.desktop /usr/share/xsessions/*.desktop; do' \
+            'for f in /run/current-system/sw/share/xsessions/*.desktop /run/current-system/sw/share/wayland-sessions/*.desktop /usr/share/xsessions/*.desktop /usr/share/wayland-sessions/*.desktop; do' \
+          --replace-fail \
+            'function powerOff() { Quickshell.execDetached(["bash", "-c", "if [ -d /run/systemd/system ]; then systemctl poweroff; else loginctl poweroff; fi"]); }' \
+            'function powerOff() { Quickshell.execDetached(["bash", "-c", "if [ -d /run/systemd/system ]; then systemctl poweroff; else loginctl poweroff; fi"]); }
+        function suspend() { Quickshell.execDetached(["bash", "-c", "if [ -d /run/systemd/system ]; then systemctl suspend; else loginctl suspend; fi"]); }' \
+          --replace-fail \
+            'PamContext {
+        id: pam' \
+            'PamContext {
+        id: pam
+        config: "qylock"'
 
-      # Explicitly disabled to stop conflicts with picom
-      XSECURELOCK_COMPOSITE_OBSCURER = "0";
-      XSECURELOCK_DISCARD_FIRST_KEYPRESS = "0";
+        # Patch lock_shell.qml for X11 (oxwm):
+        #  - Use X11BypassWindowManagerHint (override-redirect) when not in QS_TESTING mode
+        #    so oxwm cannot tile, cover with its bar, or close the lockscreen
+        #  - Position explicitly per monitor geometry and request focus immediately
+        substituteInPlace $out/share/qylock/lock_shell.qml \
+          --replace-fail \
+            '                    width: isTesting ? 1280 : screen.width
+                    height: isTesting ? 720 : screen.height
+                    visible: shellRoot.sessionLocked
+                    visibility: isTesting ? Window.Windowed : Window.FullScreen
+                    
+                    onClosing: (close) => {
+                        close.accepted = shellRoot.authenticated || shellRoot.isTesting;
+                    }
+                    
+                    flags: Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.MaximizeUsingFullscreenGeometryHint' \
+            '                    x: isTesting ? 0 : modelData.x
+                    y: isTesting ? 0 : modelData.y
+                    width: isTesting ? 1280 : modelData.width
+                    height: isTesting ? 720 : modelData.height
+                    visible: shellRoot.sessionLocked
+                    visibility: isTesting ? Window.Windowed : Window.FullScreen
 
-      # Fallback TokyoNight (Night) palette styling (overridden dynamically by matugen Material You in oxwm-lock)
-      XSECURELOCK_BACKGROUND_COLOR = "#1a1b26";
-      XSECURELOCK_AUTH_BACKGROUND_COLOR = "#24283b";
-      XSECURELOCK_AUTH_FOREGROUND_COLOR = "#c0caf5";
-      XSECURELOCK_AUTH_WARNING_COLOR = "#f7768e";
-      XSECURELOCK_FONT = "JetBrainsMono Nerd Font:size=14";
-      XSECURELOCK_SHOW_DATETIME = "1";
-      XSECURELOCK_DATETIME_FORMAT = "%H:%M • %A, %d %B";
-      XSECURELOCK_PASSWORD_PROMPT = "time";
-      XSECURELOCK_SHOW_HOSTNAME = "0";
-      XSECURELOCK_SHOW_USERNAME = "1";
+                    onVisibleChanged: if (visible) requestActivate()
+                    Component.onCompleted: if (visible) requestActivate()
+
+                    onClosing: (close) => {
+                        close.accepted = shellRoot.authenticated || shellRoot.isTesting;
+                    }
+
+                    flags: isTesting
+                        ? (Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+                        : (Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint | Qt.X11BypassWindowManagerHint | Qt.MaximizeUsingFullscreenGeometryHint)'
+
+        # Patch lock.sh to resolve theme from QYLOCK_THEMES_ROOT without touching ~/.config/qylock
+        substituteInPlace $out/share/qylock/lock.sh \
+          --replace-fail \
+            'CONFIG_FILE="$HOME/.config/qylock/theme"
+if [ -n "$1" ]; then
+    export QS_THEME="$1"
+elif [ -f "$CONFIG_FILE" ]; then
+    export QS_THEME=$(cat "$CONFIG_FILE")
+else
+    export QS_THEME="nier-automata"
+fi' \
+            'if [ -n "$1" ]; then export QS_THEME="$1"; fi' \
+          --replace-fail \
+            'if [ -d "$DIR/../themes" ] && [ ! -d "$DIR/themes_link" ]; then
+    export QS_THEME_PATH="$DIR/../themes/$QS_THEME"
+else
+    export QS_THEME_PATH="$DIR/themes_link/$QS_THEME"
+fi' \
+            'export QS_THEME_PATH="$QYLOCK_THEMES_ROOT/$QS_THEME"' \
+          --replace-fail \
+            'killall -9 hyprlock swaylock wlogout 2>/dev/null || true' \
+            'true'
+
+        mkdir -p $out/bin
+        qmlPath="${pkgs.qt6.qt5compat}/lib/qt-6/qml:${pkgs.qt6.qtdeclarative}/lib/qt-6/qml:${pkgs.qt6.qtmultimedia}/lib/qt-6/qml:${pkgs.qt6.qtsvg}/lib/qt-6/qml"
+
+        makeWrapper $out/share/qylock/lock.sh $out/bin/qylock-lock \
+          --set-default QS_THEME "material-you-dark" \
+          --set QYLOCK_THEMES_ROOT "$out/share/qylock/themes" \
+          --set QML_XHR_ALLOW_FILE_READ "1" \
+          --set-default QT_QPA_PLATFORM "xcb" \
+          --suffix QML2_IMPORT_PATH : "$qmlPath" \
+          --suffix QML_IMPORT_PATH : "$qmlPath" \
+          --prefix PATH : ${pkgs.lib.makeBinPath [
+            pkgs.quickshell
+            pkgs.systemd
+            pkgs.coreutils
+            pkgs.gnugrep
+            pkgs.gawk
+            pkgs.bash
+          ]}
+
+        runHook postInstall
+      '';
     };
-
-    exportXsecurelockEnv =
-      lib.concatStringsSep "\n"
-      (lib.mapAttrsToList
-        (name: value: ''export ${name}="${value}"'')
-        xsecurelockSettings);
 
     lockEnv = ''
       # Rebuild a sane environment from /etc/passwd -- never trust the
@@ -88,100 +155,93 @@ let
       export DISPLAY="''${DISPLAY:-:0}"
       # xscreensaver >= 6 hacks shell out to helpers living IN the hacks
       # directory (xscreensaver-getimage-*, xscreensaver-text, ...).
-      export PATH="${pkgs.xscreensaver}/libexec/xscreensaver:${lib.makeBinPath [ pkgs.coreutils pkgs.imagemagick ]}:''${PATH:-}"
+      export PATH="${pkgs.xscreensaver}/libexec/xscreensaver:${lib.makeBinPath [ pkgs.coreutils ]}:''${PATH:-}"
     '';
 
-    # Native X11 + Imlib2 helpers:
-    #  1) oxwm-set-win-bg: paints the frosted wallpaper directly onto
-    #     xsecurelock's $XSCREENSAVER_WINDOW (both as background_pixmap and via
-    #     Expose/MapNotify events) using ~1.5 MB RAM and 0% CPU.
+    # Native X11 helpers for OLED burn-in protection while locked with qylock:
+    #  1) oxwm-oled-saver-win: creates a fullscreen black override-redirect X11
+    #     window on top of qylock, exports XSCREENSAVER_WINDOW=<xid>, and runs
+    #     saver_xscreensaver inside it (honoring ~/.xscreensaver).
     #  2) oxwm-wait-input: monitors live X11 pointer coordinates (XQueryPointer)
     #     and keymap state (XQueryKeymap) every 80ms; returns 0 immediately on
     #     any mouse movement or keypress, or 1 if timeout_ms elapses with no input.
-    oxwm-set-win-bg = pkgs.runCommandCC "oxwm-set-win-bg" {
-      buildInputs = [ pkgs.xorg.libX11 pkgs.imlib2 ];
+    oxwm-lock-helpers = pkgs.runCommandCC "oxwm-lock-helpers" {
+      buildInputs = [ pkgs.xorg.libX11 ];
     } ''
       mkdir -p $out/bin
-      cat << 'EOF' > main.c
+      cat << 'EOF' > oled_saver_win.c
       #include <X11/Xlib.h>
-      #include <Imlib2.h>
       #include <signal.h>
       #include <stdio.h>
       #include <stdlib.h>
+      #include <sys/wait.h>
       #include <unistd.h>
 
-      static volatile sig_atomic_t keep_running = 1;
-      static void handle_sig(int sig) { (void)sig; keep_running = 0; }
-      static int x_err_handler(Display *d, XErrorEvent *e) { (void)d; (void)e; return 0; }
+      static volatile pid_t child_pid = -1;
+      static void handle_sig(int sig) {
+          (void)sig;
+          if (child_pid > 0) {
+              kill(-child_pid, SIGTERM);
+              kill(child_pid, SIGTERM);
+          }
+      }
 
       int main(int argc, char **argv) {
-          if (argc < 3) return 1;
-          Window win = (Window)strtoul(argv[1], NULL, 0);
-          const char *img_path = argv[2];
+          if (argc < 2) return 1;
 
           signal(SIGTERM, handle_sig);
           signal(SIGINT, handle_sig);
 
           Display *dpy = XOpenDisplay(NULL);
           if (!dpy) return 1;
-          XSetErrorHandler(x_err_handler);
 
-          XWindowAttributes attr;
-          if (!XGetWindowAttributes(dpy, win, &attr) || attr.width <= 0 || attr.height <= 0) {
-              XCloseDisplay(dpy);
-              return 1;
-          }
+          int scr = DefaultScreen(dpy);
+          Window root = RootWindow(dpy, scr);
+          int w = DisplayWidth(dpy, scr);
+          int h = DisplayHeight(dpy, scr);
 
-          Imlib_Image img = imlib_load_image(img_path);
-          if (!img) {
-              XCloseDisplay(dpy);
-              return 1;
-          }
+          XSetWindowAttributes swa;
+          swa.override_redirect = True;
+          swa.background_pixel = BlackPixel(dpy, scr);
 
-          imlib_context_set_display(dpy);
-          imlib_context_set_visual(attr.visual);
-          imlib_context_set_colormap(attr.colormap);
-          imlib_context_set_image(img);
+          Window win = XCreateWindow(
+              dpy, root, 0, 0, (unsigned int)w, (unsigned int)h, 0,
+              CopyFromParent, InputOutput, CopyFromParent,
+              CWOverrideRedirect | CWBackPixel, &swa
+          );
 
-          Pixmap pmap = XCreatePixmap(dpy, win, attr.width, attr.height, attr.depth);
-          imlib_context_set_drawable(pmap);
-          imlib_render_image_on_drawable_at_size(0, 0, attr.width, attr.height);
-          imlib_free_image();
-
-          GC gc = XCreateGC(dpy, win, 0, NULL);
-          XSelectInput(dpy, win, ExposureMask | StructureNotifyMask | VisibilityChangeMask);
-          XSetWindowBackgroundPixmap(dpy, win, pmap);
-          XClearWindow(dpy, win);
-          XCopyArea(dpy, pmap, win, gc, 0, 0, attr.width, attr.height, 0, 0);
+          XMapRaised(dpy, win);
           XFlush(dpy);
 
-          int initial_Burst = 15;
-          while (keep_running) {
-              int need_redraw = (initial_Burst > 0);
-              if (initial_Burst > 0) initial_Burst--;
+          char xid_buf[32];
+          snprintf(xid_buf, sizeof(xid_buf), "%lu", (unsigned long)win);
+          setenv("XSCREENSAVER_WINDOW", xid_buf, 1);
 
-              while (XPending(dpy) > 0) {
-                  XEvent ev;
-                  XNextEvent(dpy, &ev);
-                  if (ev.type == Expose || ev.type == MapNotify || ev.type == ConfigureNotify || ev.type == VisibilityNotify) {
-                      need_redraw = 1;
-                  }
-              }
-              if (need_redraw) {
-                  XSetWindowBackgroundPixmap(dpy, win, pmap);
-                  XCopyArea(dpy, pmap, win, gc, 0, 0, attr.width, attr.height, 0, 0);
-                  XFlush(dpy);
-              }
-              usleep(100000);
+          pid_t pid = fork();
+          if (pid == 0) {
+              setpgid(0, 0);
+              execvp(argv[1], &argv[1]);
+              _exit(127);
+          }
+          if (pid < 0) {
+              XDestroyWindow(dpy, win);
+              XCloseDisplay(dpy);
+              return 1;
           }
 
-          XFreeGC(dpy, gc);
-          XFreePixmap(dpy, pmap);
+          child_pid = pid;
+          int status = 0;
+          while (waitpid(pid, &status, 0) < 0) {
+              /* retry if interrupted by signal */
+          }
+
+          XDestroyWindow(dpy, win);
+          XFlush(dpy);
           XCloseDisplay(dpy);
           return 0;
       }
       EOF
-      $CC -O2 main.c -o $out/bin/oxwm-set-win-bg -lX11 -lImlib2
+      $CC -O2 oled_saver_win.c -o $out/bin/oxwm-oled-saver-win -lX11
 
       cat << 'EOF' > wait_input.c
       #include <X11/Xlib.h>
@@ -277,141 +337,97 @@ let
     '';
 
     oxwm-lock = pkgs.writeShellScriptBin "oxwm-lock" ''
-      # Main locker: used by xidlehook (idle) AND xss-lock (before suspend).
+      # Main locker: used by Super+Shift+L, xidlehook (idle), and xss-lock (suspend).
+      # Displays Matugen-themed qylock (material-you-dark) and runs xscreensaver
+      # after 60s of inactivity while locked to protect the OLED panel from burn-in.
 
       ${lockEnv}
 
-      ${exportXsecurelockEnv}
-
-      # Dynamically theme the lockscreen auth box to match active matugen Material You palette
-      if [ -f "$HOME/.cache/matugen/colors-lock.sh" ]; then
-        . "$HOME/.cache/matugen/colors-lock.sh"
-        export XSECURELOCK_BACKGROUND_COLOR="''${background:-#1a1b26}"
-        export XSECURELOCK_AUTH_BACKGROUND_COLOR="''${auth_background:-#24283b}"
-        export XSECURELOCK_AUTH_FOREGROUND_COLOR="''${foreground:-#c0caf5}"
-        export XSECURELOCK_AUTH_WARNING_COLOR="''${warning:-#f7768e}"
-        export XSECURELOCK_DIM_COLOR="''${dim:-#1a1b26}"
-      fi
-
-      # Ensure ~/.cache/matugen/lock-wallpaper.png is up-to-date with current wallpaper & frost settings
-      if [ -x "$HOME/nixos-dotfiles/scripts/theme-switch.sh" ]; then
-        "$HOME/nixos-dotfiles/scripts/theme-switch.sh" --frost-only "''${wallpaper:-}" 2>/dev/null || true
+      # Prevent duplicate lock instances
+      if ${pkgs.procps}/bin/pgrep -u "$USER" -f 'quickshell.*lock_shell\.qml' >/dev/null 2>&1; then
+        exit 0
       fi
 
       /run/current-system/sw/bin/oxwm-lock-dismiss || true
 
-      exec xsecurelock
-    '';
+      export XSECURELOCK_XSCREENSAVER_PATH="${pkgs.xscreensaver}/libexec/xscreensaver"
+      IDLE_LIMIT="''${QYLOCK_SAVER_IDLE_TIMEOUT:-60}"
+      WAIT_INPUT="${oxwm-lock-helpers}/bin/oxwm-wait-input"
+      SAVER_WIN="${oxwm-lock-helpers}/bin/oxwm-oled-saver-win"
+      SAVER_BIN="${pkgs.xsecurelock}/libexec/xsecurelock/saver_xscreensaver"
 
-    # Hybrid xsecurelock saver module:
-    #  - Immediately paints the pre-rendered dual_kawase frosted wallpaper
-    #    onto $XSCREENSAVER_WINDOW's X11 background_pixmap via oxwm-set-win-bg.
-    #  - Waits for 60s of continuous inactivity via xsecurelock's event-driven
-    #    until_nonidle helper before launching saver_xscreensaver.
-    #  - On any mouse movement or keypress, immediately stops the xscreensaver
-    #    hack, repaints the frosted wallpaper, and sends SIGUSR2 to xsecurelock
-    #    so the Material You-themed auth_x11 password prompt opens immediately.
-    oxwm-saver-hybrid = pkgs.writeShellScriptBin "saver_oxwm-hybrid" ''
-      ${lockEnv}
-      [ -n "''${XSCREENSAVER_WINDOW:-}" ] || exec ${pkgs.coreutils}/bin/sleep infinity
-
-      FROSTED_IMG="$HOME/.cache/matugen/lock-wallpaper.png"
-      [ -f "$FROSTED_IMG" ] || FROSTED_IMG="${lockImage}"
-
-      IDLE_LIMIT="''${XSECURELOCK_SAVER_IDLE_TIMEOUT:-60}"
-      WAIT_INPUT="${oxwm-set-win-bg}/bin/oxwm-wait-input"
-      BG_PID=""
-      SAVER_PID=""
-      WAIT_PID=""
-
-      stop_bg() {
-        if [ -n "$BG_PID" ] && kill -0 "$BG_PID" 2>/dev/null; then
-          kill -TERM -- "-$BG_PID" 2>/dev/null || kill -TERM "$BG_PID" 2>/dev/null || true
-          wait "$BG_PID" 2>/dev/null || true
-        fi
-        BG_PID=""
-      }
-
-      paint_frosted() {
-        stop_bg
-        if [ -f "$FROSTED_IMG" ]; then
-          ${pkgs.util-linux}/bin/setsid sh -c '
-            ${oxwm-set-win-bg}/bin/oxwm-set-win-bg "$1" "$2" || \
-            exec ${pkgs.mpv}/bin/mpv \
-              --really-quiet --no-config --no-osc --no-osd-bar \
-              --no-input-default-bindings --vo=x11 --ao=null \
-              --no-audio --hwdec=no --wid="$1" \
-              --image-display-duration=inf "$2"
-          ' _ "$XSCREENSAVER_WINDOW" "$FROSTED_IMG" &
-          BG_PID=$!
-        fi
-      }
-
-      stop_hack() {
-        if [ -n "$SAVER_PID" ] && kill -0 "$SAVER_PID" 2>/dev/null; then
-          kill -TERM -- "-$SAVER_PID" 2>/dev/null || kill -TERM "$SAVER_PID" 2>/dev/null || true
-          wait "$SAVER_PID" 2>/dev/null || true
-        fi
-        SAVER_PID=""
-      }
-
-      stop_wait() {
-        if [ -n "$WAIT_PID" ] && kill -0 "$WAIT_PID" 2>/dev/null; then
-          kill -TERM "$WAIT_PID" 2>/dev/null || true
-          wait "$WAIT_PID" 2>/dev/null || true
-        fi
-        WAIT_PID=""
-      }
-
+      WATCHER_PID=""
+      QYLOCK_PID=""
       cleanup() {
-        stop_wait
-        stop_hack
-        stop_bg
-        exit 0
-      }
-      trap cleanup TERM INT
-      trap 'stop_wait; stop_hack; paint_frosted' USR1
-
-      paint_frosted
-      # Brief settling delay so key-release from Super+Shift+L doesn't immediately re-trigger wake
-      ${pkgs.coreutils}/bin/sleep 0.35
-
-      while :; do
-        # 1. If auth_x11 is currently open, wait until it closes before starting the 60s countdown
-        while ${pkgs.procps}/bin/pgrep -u "$USER" -x auth_x11 >/dev/null 2>&1; do
-          ${pkgs.coreutils}/bin/sleep 0.3
-        done
-
-        # 2. Wait for 60s of continuous inactivity on the frosted wallpaper.
-        #    oxwm-wait-input returns 0 on any mouse move or keypress, 1 if full 60s elapses.
-        "$WAIT_INPUT" "$((IDLE_LIMIT * 1000))" &
-        WAIT_PID=$!
-        if wait "$WAIT_PID"; then
-          WAIT_PID=""
-          # Movement or keypress occurred while on frosted wallpaper: summon auth_x11 prompt
-          ${pkgs.procps}/bin/pkill -u "$USER" -USR2 -x xsecurelock 2>/dev/null || true
-          ${pkgs.coreutils}/bin/sleep 0.25
-          continue
+        if [ -n "$QYLOCK_PID" ] && kill -0 "$QYLOCK_PID" 2>/dev/null; then
+          kill -TERM "$QYLOCK_PID" 2>/dev/null || true
+          wait "$QYLOCK_PID" 2>/dev/null || true
         fi
+        if [ -n "$WATCHER_PID" ] && kill -0 "$WATCHER_PID" 2>/dev/null; then
+          kill -TERM -- "-$WATCHER_PID" 2>/dev/null || kill -TERM "$WATCHER_PID" 2>/dev/null || true
+          wait "$WATCHER_PID" 2>/dev/null || true
+        fi
+      }
+      trap cleanup EXIT TERM INT
+
+      # Background OLED burn-in watcher: launches xscreensaver after 60s of idle
+      # and dismisses it back to qylock on any mouse movement or keypress.
+      ${pkgs.util-linux}/bin/setsid ${pkgs.bash}/bin/bash -c '
+        IDLE_LIMIT="$1"
+        WAIT_INPUT="$2"
+        SAVER_WIN="$3"
+        SAVER_BIN="$4"
+        SAVER_PID=""
         WAIT_PID=""
 
-        # 3. 60s of inactivity reached: free frosted pixmap and launch xscreensaver hack
-        stop_bg
-        ${pkgs.util-linux}/bin/setsid ${pkgs.xsecurelock}/libexec/xsecurelock/saver_xscreensaver &
-        SAVER_PID=$!
+        stop_wait() {
+          if [ -n "$WAIT_PID" ] && kill -0 "$WAIT_PID" 2>/dev/null; then
+            kill -TERM "$WAIT_PID" 2>/dev/null || true
+            wait "$WAIT_PID" 2>/dev/null || true
+          fi
+          WAIT_PID=""
+        }
+        stop_saver() {
+          if [ -n "$SAVER_PID" ] && kill -0 "$SAVER_PID" 2>/dev/null; then
+            kill -TERM -- "-$SAVER_PID" 2>/dev/null || kill -TERM "$SAVER_PID" 2>/dev/null || true
+            wait "$SAVER_PID" 2>/dev/null || true
+          fi
+          SAVER_PID=""
+        }
+        trap "stop_wait; stop_saver; exit 0" TERM INT EXIT
 
-        # 4. Block until ANY mouse movement or keypress is detected (up to 24h)
-        "$WAIT_INPUT" 86400000 &
-        WAIT_PID=$!
-        wait "$WAIT_PID" || true
-        WAIT_PID=""
+        sleep 0.5
+        while :; do
+          # Wait for IDLE_LIMIT seconds of continuous inactivity
+          "$WAIT_INPUT" "$((IDLE_LIMIT * 1000))" &
+          WAIT_PID=$!
+          if wait "$WAIT_PID"; then
+            WAIT_PID=""
+            # Input occurred before timeout; keep waiting
+            continue
+          fi
+          WAIT_PID=""
 
-        # 5. Movement/input detected! Stop xscreensaver, repaint frosted wallpaper, and pop up auth_x11
-        stop_hack
-        paint_frosted
-        ${pkgs.procps}/bin/pkill -u "$USER" -USR2 -x xsecurelock 2>/dev/null || true
-        ${pkgs.coreutils}/bin/sleep 0.25
-      done
+          # Inactivity reached: launch xscreensaver fullscreen over qylock
+          ${pkgs.util-linux}/bin/setsid "$SAVER_WIN" "$SAVER_BIN" &
+          SAVER_PID=$!
+
+          # Block until any mouse movement or keypress
+          "$WAIT_INPUT" 86400000 &
+          WAIT_PID=$!
+          wait "$WAIT_PID" || true
+          WAIT_PID=""
+
+          # Dismiss xscreensaver to reveal qylock underneath
+          stop_saver
+          sleep 0.25
+        done
+      ' _ "$IDLE_LIMIT" "$WAIT_INPUT" "$SAVER_WIN" "$SAVER_BIN" &
+      WATCHER_PID=$!
+
+      ${qylockMatugen}/bin/qylock-lock &
+      QYLOCK_PID=$!
+      wait "$QYLOCK_PID" || true
     '';
 
     # Toggle the panel between 60 Hz (battery) and 165 Hz (AC) at runtime.
@@ -643,11 +659,10 @@ let
 
 
 
-  # PAM so it can authenticate
-  security.pam.services.xsecurelock = {};
+  # PAM service for qylock (Quickshell PamContext)
+  security.pam.services.qylock = {};
 
-  # Picom: never fade the lock screen windows (fixes the flash-on-unlock,
-  # google/xsecurelock#97)
+  # Picom: never fade the lock screen or notification windows
 services.picom = {
   enable = true;
   backend = "xrender";          # keep this
@@ -659,7 +674,8 @@ services.picom = {
 
     # Completely ignore the notification windows for expensive operations
     fade-exclude = [
-      "class_g = 'xsecurelock'"
+      "class_g = 'quickshell'"
+      "class_g = 'Quickshell'"
       "class_g = 'Dunst'"
       "name = 'Dunst'"
     ];
@@ -766,8 +782,8 @@ services.picom = {
     shared-mime-info
     # required for ligatures in st
     harfbuzz
-    # Required for screen locking
-    xsecurelock
+    # Required for screen locking (qylock + xscreensaver OLED protection)
+    qylockMatugen
     xidlehook
     xscreensaver
     imagemagick
@@ -775,8 +791,7 @@ services.picom = {
     oxwm-lock-warn
     oxwm-lock-dismiss
     oxwm-lock
-    oxwm-saver-hybrid
-    oxwm-set-win-bg
+    oxwm-lock-helpers
     oxwm-battery-rate
     psmisc
     jq

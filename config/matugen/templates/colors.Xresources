@@ -1,42 +1,43 @@
-! Matugen Base16 Xresources for st and X11 terminal programs
-*.foreground:   {{ base16.base05.dark.hex }}
-*.background:   {{ base16.base00.dark.hex }}
-*foreground:    {{ base16.base05.dark.hex }}
-*background:    {{ base16.base00.dark.hex }}
+! Matugen Material You Xresources for st and X11 terminal programs
+! Grayscale/surfaces from Material You tokens; chromatic ANSI hues from blended custom_colors
+*.foreground:   {{ colors.on_surface.default.hex }}
+*.background:   {{ colors.surface.default.hex }}
+*foreground:    {{ colors.on_surface.default.hex }}
+*background:    {{ colors.surface.default.hex }}
 
-st.foreground:  {{ base16.base05.dark.hex }}
-st.background:  {{ base16.base00.dark.hex }}
-st.cursorColor: {{ base16.base05.dark.hex }}
-st.color0:      {{ base16.base00.dark.hex }}
-st.color1:      {{ base16.base08.dark.hex }}
-st.color2:      {{ base16.base0b.dark.hex }}
-st.color3:      {{ base16.base0a.dark.hex }}
-st.color4:      {{ base16.base0d.dark.hex }}
-st.color5:      {{ base16.base0e.dark.hex }}
-st.color6:      {{ base16.base0c.dark.hex }}
-st.color7:      {{ base16.base05.dark.hex }}
-st.color8:      {{ base16.base03.dark.hex }}
-st.color9:      {{ base16.base08.dark.hex }}
-st.color10:     {{ base16.base0b.dark.hex }}
-st.color11:     {{ base16.base0a.dark.hex }}
-st.color12:     {{ base16.base0d.dark.hex }}
-st.color13:     {{ base16.base0e.dark.hex }}
-st.color14:     {{ base16.base0c.dark.hex }}
-st.color15:     {{ base16.base07.dark.hex }}
+st.foreground:  {{ colors.on_surface.default.hex }}
+st.background:  {{ colors.surface.default.hex }}
+st.cursorColor: {{ colors.primary.default.hex }}
+st.color0:      {{ colors.surface.default.hex }}
+st.color1:      {{ colors.red.default.hex | auto_lightness: 15 }}
+st.color2:      {{ colors.green.default.hex | auto_lightness: 15 }}
+st.color3:      {{ colors.yellow.default.hex | auto_lightness: 15 }}
+st.color4:      {{ colors.blue.default.hex | auto_lightness: 15 }}
+st.color5:      {{ colors.magenta.default.hex | auto_lightness: 15 }}
+st.color6:      {{ colors.cyan.default.hex | auto_lightness: 15 }}
+st.color7:      {{ colors.on_surface_variant.default.hex }}
+st.color8:      {{ colors.outline.default.hex }}
+st.color9:      {{ colors.red.default.hex | auto_lightness: 5 }}
+st.color10:     {{ colors.green.default.hex | auto_lightness: 5 }}
+st.color11:     {{ colors.yellow.default.hex | auto_lightness: 5 }}
+st.color12:     {{ colors.blue.default.hex | auto_lightness: 5 }}
+st.color13:     {{ colors.magenta.default.hex | auto_lightness: 5 }}
+st.color14:     {{ colors.cyan.default.hex | auto_lightness: 5 }}
+st.color15:     {{ colors.on_surface.default.hex }}
 
-*.color0:       {{ base16.base00.dark.hex }}
-*.color1:       {{ base16.base08.dark.hex }}
-*.color2:       {{ base16.base0b.dark.hex }}
-*.color3:       {{ base16.base0a.dark.hex }}
-*.color4:       {{ base16.base0d.dark.hex }}
-*.color5:       {{ base16.base0e.dark.hex }}
-*.color6:       {{ base16.base0c.dark.hex }}
-*.color7:       {{ base16.base05.dark.hex }}
-*.color8:       {{ base16.base03.dark.hex }}
-*.color9:       {{ base16.base08.dark.hex }}
-*.color10:      {{ base16.base0b.dark.hex }}
-*.color11:      {{ base16.base0a.dark.hex }}
-*.color12:      {{ base16.base0d.dark.hex }}
-*.color13:      {{ base16.base0e.dark.hex }}
-*.color14:      {{ base16.base0c.dark.hex }}
-*.color15:      {{ base16.base07.dark.hex }}
+*.color0:       {{ colors.surface.default.hex }}
+*.color1:       {{ colors.red.default.hex | auto_lightness: 15 }}
+*.color2:       {{ colors.green.default.hex | auto_lightness: 15 }}
+*.color3:       {{ colors.yellow.default.hex | auto_lightness: 15 }}
+*.color4:       {{ colors.blue.default.hex | auto_lightness: 15 }}
+*.color5:       {{ colors.magenta.default.hex | auto_lightness: 15 }}
+*.color6:       {{ colors.cyan.default.hex | auto_lightness: 15 }}
+*.color7:       {{ colors.on_surface_variant.default.hex }}
+*.color8:       {{ colors.outline.default.hex }}
+*.color9:       {{ colors.red.default.hex | auto_lightness: 5 }}
+*.color10:      {{ colors.green.default.hex | auto_lightness: 5 }}
+*.color11:      {{ colors.yellow.default.hex | auto_lightness: 5 }}
+*.color12:      {{ colors.blue.default.hex | auto_lightness: 5 }}
+*.color13:      {{ colors.magenta.default.hex | auto_lightness: 5 }}
+*.color14:      {{ colors.cyan.default.hex | auto_lightness: 5 }}
+*.color15:      {{ colors.on_surface.default.hex }}

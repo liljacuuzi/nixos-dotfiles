@@ -4,8 +4,17 @@ fallback_color = "#7aa2f7"
 source_color_index = 0
 caching = false
 
+# Blended semantic ANSI hues for terminal & shell programs
+[config.custom_colors]
+red     = { color = "#e06c75", blend = true }
+green   = { color = "#98c379", blend = true }
+yellow  = { color = "#e5c07b", blend = true }
+blue    = { color = "#61afef", blend = true }
+magenta = { color = "#c678dd", blend = true }
+cyan    = { color = "#56b6c2", blend = true }
+
 # ----------------------------------------------------------------------------
-# Base16 templates (st, neovim, btop, yazi, xsecurelock password entry box)
+# Regular Material You templates: Shell & Terminal Programs
 # ----------------------------------------------------------------------------
 [templates.xresources]
 input_path = "templates/colors.Xresources"
@@ -16,8 +25,12 @@ input_path = "templates/sequences"
 output_path = "~/.cache/matugen/sequences"
 
 [templates.neovim]
-input_path = "templates/colors-nvim.lua"
-output_path = "~/.cache/matugen/colors-nvim.lua"
+input_path = "templates/nvim-colors.json"
+output_path = "~/.cache/matugen/nvim-colors.json"
+
+[templates.neovim_term]
+input_path = "templates/colors-nvim-term.lua"
+output_path = "~/.cache/matugen/colors-nvim-term.lua"
 
 [templates.btop]
 input_path = "templates/btop.theme"
@@ -26,6 +39,18 @@ output_path = "~/.cache/matugen/btop.theme"
 [templates.yazi]
 input_path = "templates/yazi-theme.toml"
 output_path = "~/.cache/matugen/yazi-theme.toml"
+
+[templates.fzf]
+input_path = "templates/fzf-colors.sh"
+output_path = "~/.cache/matugen/fzf-colors.sh"
+
+[templates.bat]
+input_path = "templates/matugen-bat.tmTheme"
+output_path = "~/.cache/matugen/bat.tmTheme"
+
+[templates.alacritty]
+input_path = "templates/alacritty-colors.toml"
+output_path = "~/.cache/matugen/alacritty-colors.toml"
 
 [templates.lock]
 input_path = "templates/colors-lock.sh"

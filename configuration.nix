@@ -40,7 +40,7 @@ let
     #      a random xscreensaver hack from ~/.xscreensaver
     #   3. Upon any mouse movement or keypress, immediately stops the
     #      xscreensaver hack, restores the frosted dual_kawase wallpaper, and
-    #      opens the Base16-themed auth_x11 password prompt.
+    #      opens the Material You-themed auth_x11 password prompt.
     xsecurelockSettings = {
       # Where the REAL xscreensaver hacks live.
       XSECURELOCK_XSCREENSAVER_PATH = "${pkgs.xscreensaver}/libexec/xscreensaver";
@@ -58,7 +58,7 @@ let
       XSECURELOCK_COMPOSITE_OBSCURER = "0";
       XSECURELOCK_DISCARD_FIRST_KEYPRESS = "0";
 
-      # Fallback TokyoNight (Night) palette styling (overridden dynamically by matugen Base16 in oxwm-lock)
+      # Fallback TokyoNight (Night) palette styling (overridden dynamically by matugen Material You in oxwm-lock)
       XSECURELOCK_BACKGROUND_COLOR = "#1a1b26";
       XSECURELOCK_AUTH_BACKGROUND_COLOR = "#24283b";
       XSECURELOCK_AUTH_FOREGROUND_COLOR = "#c0caf5";
@@ -283,7 +283,7 @@ let
 
       ${exportXsecurelockEnv}
 
-      # Dynamically theme the lockscreen auth box to match active matugen Base16 palette
+      # Dynamically theme the lockscreen auth box to match active matugen Material You palette
       if [ -f "$HOME/.cache/matugen/colors-lock.sh" ]; then
         . "$HOME/.cache/matugen/colors-lock.sh"
         export XSECURELOCK_BACKGROUND_COLOR="''${background:-#1a1b26}"
@@ -310,7 +310,7 @@ let
     #    until_nonidle helper before launching saver_xscreensaver.
     #  - On any mouse movement or keypress, immediately stops the xscreensaver
     #    hack, repaints the frosted wallpaper, and sends SIGUSR2 to xsecurelock
-    #    so the Base16-themed auth_x11 password prompt opens immediately.
+    #    so the Material You-themed auth_x11 password prompt opens immediately.
     oxwm-saver-hybrid = pkgs.writeShellScriptBin "saver_oxwm-hybrid" ''
       ${lockEnv}
       [ -n "''${XSCREENSAVER_WINDOW:-}" ] || exec ${pkgs.coreutils}/bin/sleep infinity

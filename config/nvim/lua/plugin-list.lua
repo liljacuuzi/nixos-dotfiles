@@ -7,6 +7,7 @@ return {
     "hrsh7th/cmp-buffer",
     "nvim-telescope/telescope.nvim",
     { "ThePrimeagen/harpoon", branch = "harpoon2" },
+    "Senal-D-A-Gunaratna/matugen.nvim",
     "folke/tokyonight.nvim",
     "nvim-lualine/lualine.nvim",
     "brenoprata10/nvim-highlight-colors",

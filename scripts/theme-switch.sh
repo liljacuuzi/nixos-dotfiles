@@ -180,6 +180,14 @@ if [ -f "$CACHE_DIR/sequences" ]; then
 fi
 pkill -USR1 -x st 2>/dev/null || true
 
+echo "==> Updating btop..."
+pkill -USR2 -x btop 2>/dev/null || pkill -USR2 -x ".btop-wrapped" 2>/dev/null || true
+
+echo "==> Updating bat..."
+if command -v bat >/dev/null 2>&1 && [ -f "$HOME/.config/bat/themes/Matugen.tmTheme" ]; then
+    bat cache --build >/dev/null 2>&1 || true
+fi
+
 echo "==> Updating dunst..."
 if [ -n "${DISPLAY:-}" ]; then
     if pgrep -x dunst >/dev/null 2>&1 || pgrep -x .dunst-wrapped >/dev/null 2>&1; then
@@ -205,11 +213,7 @@ if [ -n "${DISPLAY:-}" ] && command -v xdotool >/dev/null 2>&1; then
 fi
 
 echo "==> Updating running Neovim instances..."
-for sock in $(find "${XDG_RUNTIME_DIR:-/tmp}" -maxdepth 2 \( -name "nvim*.0" -o -name "nvim*" \) 2>/dev/null); do
-    if [ -S "$sock" ]; then
-        nvim --server "$sock" --remote-send "<Esc>:colorscheme matugen<CR>" 2>/dev/null || true
-    fi
-done
+pkill -USR1 -x nvim 2>/dev/null || pkill -USR1 -x ".nvim-wrapped" 2>/dev/null || true
 
 echo "==> Updating Firefox..."
 # MatugenFox's native host (matugenfox_host.py) polls firefox_websites.css mtime every 2s

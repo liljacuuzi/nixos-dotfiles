@@ -1,0 +1,20 @@
+-- Terminal ANSI colors for Neovim built-in terminal (:Flterm / :term),
+-- matching st's Material You surface/foreground + blended ANSI palette.
+return {
+    color0  = "{{ colors.surface.default.hex }}",
+    color1  = "{{ colors.red.default.hex | auto_lightness: 15 }}",
+    color2  = "{{ colors.green.default.hex | auto_lightness: 15 }}",
+    color3  = "{{ colors.yellow.default.hex | auto_lightness: 15 }}",
+    color4  = "{{ colors.blue.default.hex | auto_lightness: 15 }}",
+    color5  = "{{ colors.magenta.default.hex | auto_lightness: 15 }}",
+    color6  = "{{ colors.cyan.default.hex | auto_lightness: 15 }}",
+    color7  = "{{ colors.on_surface_variant.default.hex }}",
+    color8  = "{{ colors.outline.default.hex }}",
+    color9  = "{{ colors.red.default.hex | auto_lightness: 5 }}",
+    color10 = "{{ colors.green.default.hex | auto_lightness: 5 }}",
+    color11 = "{{ colors.yellow.default.hex | auto_lightness: 5 }}",
+    color12 = "{{ colors.blue.default.hex | auto_lightness: 5 }}",
+    color13 = "{{ colors.magenta.default.hex | auto_lightness: 5 }}",
+    color14 = "{{ colors.cyan.default.hex | auto_lightness: 5 }}",
+    color15 = "{{ colors.on_surface.default.hex }}",
+}

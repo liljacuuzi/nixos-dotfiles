@@ -13,6 +13,7 @@ let
     st = "st";
     dunst = "dunst";
     btop = "btop";
+    "bat/config" = "bat/config";
     "yazi/keymap.toml" = "yazi/keymap.toml";
     "yazi/yazi.toml" = "yazi/yazi.toml";
     matugen = "matugen";
@@ -109,12 +110,14 @@ in
     
 
     initExtra = ''
-      # Apply matugen Base16 colors to every newly spawned terminal/shell
+      # Apply matugen Material You colors to every newly spawned terminal/shell
       [ -f "$HOME/.cache/matugen/sequences" ] && cat "$HOME/.cache/matugen/sequences"
+      [ -f "$HOME/.cache/matugen/fzf-colors.sh" ] && . "$HOME/.cache/matugen/fzf-colors.sh"
+      export BAT_THEME="Matugen"
 
       # Distinct file and directory colors using terminal ANSI palette
       export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.zip=01;31:*.zst=01;31:*.7z=01;31:*.rar=01;31:*.gz=01;31:*.bz2=01;31:*.xz=01;31:*.png=01;35:*.jpg=01;35:*.jpeg=01;35:*.webp=01;35:*.gif=01;35:*.svg=01;35:*.bmp=01;35:*.ico=01;35:*.mp4=01;33:*.mkv=01;33:*.webm=01;33:*.avi=01;33:*.mov=01;33:*.mp3=00;36:*.flac=00;36:*.wav=00;36:*.ogg=00;36:*.m4a=00;36:*.opus=00;36:*.nix=01;36:*.lua=01;34:*.sh=01;32:*.bash=01;32:*.py=01;32:*.rs=01;31:*.go=01;36:*.c=01;33:*.h=01;33:*.cpp=01;33:*.js=01;33:*.ts=01;34:*.json=00;33:*.toml=00;33:*.yaml=00;33:*.yml=00;33:*.conf=00;36:*.rasi=00;36:*.pdf=01;31:*.md=01;37:*.txt=00;37:*~=00;90:*.bak=00;90:*.tmp=00;90:*.swp=00;90:*.lock=00;90:'
-      export PS1='\[\e[38;5;40m\]\u\[\e[0m\] in \[\e[38;5;33m\]\w\[\e[0m\] \\$ '
+      export PS1='\[\e[1;32m\]\u\[\e[0m\] in \[\e[1;34m\]\w\[\e[0m\] \\$ '
     '';
   };
    
@@ -301,11 +304,12 @@ services.udiskie = {
   # Anki matugen theme addon integration
   home.file.".local/share/Anki2/addons21/matugen".source = create_symlink "${dotfiles}/anki/addons21/matugen";
 
-  # symlink ~/.config to ~/nixos-dotfiles/config/, plus dynamic Yazi theme
+  # symlink ~/.config to ~/nixos-dotfiles/config/, plus dynamic Yazi & Bat themes
   xdg.configFile = (builtins.mapAttrs (name: subpath: {
     source = create_symlink "${dotfiles}/${subpath}";
   }) configs) // {
     "yazi/theme.toml".source = create_symlink "${config.home.homeDirectory}/.cache/matugen/yazi-theme.toml";
+    "bat/themes/Matugen.tmTheme".source = create_symlink "${config.home.homeDirectory}/.cache/matugen/bat.tmTheme";
   };
 
  programs.firefox = {

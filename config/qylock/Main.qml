@@ -122,6 +122,7 @@ Rectangle {
     property real ui1: 0
     property real ui2: 0
     property string errorMessage: ""
+    property string pendingAction: "" // "" = unlock, "powerOff", "reboot"
 
     // Fonts
     FontLoader {
@@ -304,10 +305,14 @@ Rectangle {
                 // Power
                 Rectangle {
                     id: powerTile
+                    property bool isSelected: root.pendingAction === "powerOff"
                     width: 180 * s; height: 76 * s; radius: 38 * s
-                    color: powerMouse.pressed ? root.cSurfaceContainerLowest : (powerMouse.containsMouse ? root.cSurfaceContainerHighest : root.cSurfaceContainer)
+                    color: powerMouse.pressed ? root.cSurfaceContainerLowest : (powerMouse.containsMouse || isSelected ? root.cSurfaceContainerHighest : root.cSurfaceContainer)
+                    border.color: isSelected ? root.cPrimary : "transparent"
+                    border.width: isSelected ? 2 * s : 0
                     scale: powerMouse.pressed ? 0.95 : (powerMouse.containsMouse ? 1.03 : 1.0)
                     Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on border.color { ColorAnimation { duration: 150 } }
                     Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
 
                     Row {
@@ -318,7 +323,8 @@ Rectangle {
 
                         Rectangle {
                             width: 48 * s; height: 48 * s; radius: 24 * s
-                            color: root.cSecondaryContainer
+                            color: powerTile.isSelected ? root.cPrimaryContainer : root.cSecondaryContainer
+                            Behavior on color { ColorAnimation { duration: 150 } }
                             anchors.verticalCenter: parent.verticalCenter
 
                             Image {
@@ -347,14 +353,14 @@ Rectangle {
                                 font.family: root.sansFont
                                 font.pixelSize: 12 * s
                                 font.bold: true
-                                color: powerMouse.containsMouse ? root.cOnSurface : root.cOnSurfaceVariant
+                                color: (powerMouse.containsMouse || powerTile.isSelected) ? root.cOnSurface : root.cOnSurfaceVariant
                                 Behavior on color { ColorAnimation { duration: 150 } }
                             }
                             Text {
-                                text: "SHUT DOWN"
+                                text: powerTile.isSelected ? "CONFIRM PWD" : "SHUT DOWN"
                                 font.family: root.sansFont
                                 font.pixelSize: 9 * s
-                                color: powerMouse.containsMouse ? root.cOnSurfaceVariant : root.cOutline
+                                color: powerTile.isSelected ? root.cPrimary : (powerMouse.containsMouse ? root.cOnSurfaceVariant : root.cOutline)
                                 Behavior on color { ColorAnimation { duration: 150 } }
                             }
                         }
@@ -365,7 +371,11 @@ Rectangle {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: if (typeof sddm !== "undefined" && sddm && sddm.powerOff) sddm.powerOff();
+                        onClicked: {
+                            root.pendingAction = (root.pendingAction === "powerOff") ? "" : "powerOff";
+                            root.errorMessage = "";
+                            pwd.forceActiveFocus();
+                        }
                     }
                 }
 
@@ -446,10 +456,14 @@ Rectangle {
                 // Reboot
                 Rectangle {
                     id: rebootTile
+                    property bool isSelected: root.pendingAction === "reboot"
                     width: 180 * s; height: 76 * s; radius: 38 * s
-                    color: rebootMouse.pressed ? root.cSurfaceContainerLowest : (rebootMouse.containsMouse ? root.cSurfaceContainerHighest : root.cSurfaceContainer)
+                    color: rebootMouse.pressed ? root.cSurfaceContainerLowest : (rebootMouse.containsMouse || isSelected ? root.cSurfaceContainerHighest : root.cSurfaceContainer)
+                    border.color: isSelected ? root.cPrimary : "transparent"
+                    border.width: isSelected ? 2 * s : 0
                     scale: rebootMouse.pressed ? 0.95 : (rebootMouse.containsMouse ? 1.03 : 1.0)
                     Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on border.color { ColorAnimation { duration: 150 } }
                     Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutBack } }
 
                     Row {
@@ -460,7 +474,8 @@ Rectangle {
 
                         Rectangle {
                             width: 48 * s; height: 48 * s; radius: 24 * s
-                            color: root.cSecondaryContainer
+                            color: rebootTile.isSelected ? root.cPrimaryContainer : root.cSecondaryContainer
+                            Behavior on color { ColorAnimation { duration: 150 } }
                             anchors.verticalCenter: parent.verticalCenter
 
                             Image {
@@ -489,14 +504,14 @@ Rectangle {
                                 font.family: root.sansFont
                                 font.pixelSize: 12 * s
                                 font.bold: true
-                                color: rebootMouse.containsMouse ? root.cOnSurface : root.cOnSurfaceVariant
+                                color: (rebootMouse.containsMouse || rebootTile.isSelected) ? root.cOnSurface : root.cOnSurfaceVariant
                                 Behavior on color { ColorAnimation { duration: 150 } }
                             }
                             Text {
-                                text: "RESTART"
+                                text: rebootTile.isSelected ? "CONFIRM PWD" : "RESTART"
                                 font.family: root.sansFont
                                 font.pixelSize: 9 * s
-                                color: rebootMouse.containsMouse ? root.cOnSurfaceVariant : root.cOutline
+                                color: rebootTile.isSelected ? root.cPrimary : (rebootMouse.containsMouse ? root.cOnSurfaceVariant : root.cOutline)
                                 Behavior on color { ColorAnimation { duration: 150 } }
                             }
                         }
@@ -507,7 +522,11 @@ Rectangle {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: if (typeof sddm !== "undefined" && sddm && sddm.reboot) sddm.reboot();
+                        onClicked: {
+                            root.pendingAction = (root.pendingAction === "reboot") ? "" : "reboot";
+                            root.errorMessage = "";
+                            pwd.forceActiveFocus();
+                        }
                     }
                 }
 
@@ -666,16 +685,28 @@ Rectangle {
 
                             property bool wasClicked: false
                             onActiveFocusChanged: if (!activeFocus && text.length === 0) wasClicked = false
-                            Keys.onEscapePressed: text = ""
+                            Keys.onEscapePressed: {
+                                if (text.length > 0) {
+                                    text = "";
+                                } else if (root.pendingAction !== "") {
+                                    root.pendingAction = "";
+                                }
+                            }
 
                             Text {
                                 anchors.centerIn: parent
-                                text: root.errorMessage !== "" ? root.errorMessage : "PASSWORD REQUIRED"
+                                text: root.errorMessage !== ""
+                                    ? root.errorMessage
+                                    : (root.pendingAction === "powerOff"
+                                        ? "PASSWORD TO SHUT DOWN"
+                                        : (root.pendingAction === "reboot"
+                                            ? "PASSWORD TO REBOOT"
+                                            : "PASSWORD REQUIRED"))
                                 font.family: root.sansFont
                                 font.pixelSize: 11 * s
                                 font.bold: true
                                 font.letterSpacing: 1.5 * s
-                                color: root.errorMessage !== "" ? root.cError : root.cOutline
+                                color: root.errorMessage !== "" ? root.cError : (root.pendingAction !== "" ? root.cPrimary : root.cOutline)
                                 opacity: pwd.text === "" && (!pwd.activeFocus || (!pwd.wasClicked && pwd.text.length === 0)) ? 1 : 0
                                 Behavior on opacity { NumberAnimation { duration: 150 } }
                             }
@@ -710,7 +741,11 @@ Rectangle {
                             onAccepted: {
                                 if (typeof sddm !== "undefined" && sddm && pwd.text !== "") {
                                     let currentUser = root.getUserLogin();
-                                    sddm.login(currentUser, pwd.text, root.sessionIndex);
+                                    if (typeof sddm.loginWithAction === "function") {
+                                        sddm.loginWithAction(currentUser, pwd.text, root.sessionIndex, root.pendingAction);
+                                    } else {
+                                        sddm.login(currentUser, pwd.text, root.sessionIndex);
+                                    }
                                 }
                             }
                         }
@@ -775,7 +810,9 @@ Rectangle {
                                     spacing: 6 * s
 
                                     Text {
-                                        text: "UNLOCK"
+                                        text: root.pendingAction === "powerOff"
+                                            ? "SHUT DOWN"
+                                            : (root.pendingAction === "reboot" ? "REBOOT" : "UNLOCK")
                                         font.family: root.sansFont
                                         font.pixelSize: 10 * s
                                         font.bold: true

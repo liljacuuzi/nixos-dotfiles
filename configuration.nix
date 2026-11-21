@@ -49,20 +49,66 @@ let
         #  1. Add missing suspend() for the Sleep quick-settings tile
         #  2. Include NixOS xsession/wayland-session paths so Session shows OXWM
         #  3. Authenticate against dedicated NixOS PAM service "qylock"
+        #  4. Gate powerOff/reboot behind PAM authentication via loginWithAction()
         substituteInPlace $out/share/qylock/shim/SddmShim.qml \
           --replace-fail \
             'for f in /usr/share/wayland-sessions/*.desktop /usr/share/xsessions/*.desktop; do' \
             'for f in /run/current-system/sw/share/xsessions/*.desktop /run/current-system/sw/share/wayland-sessions/*.desktop /usr/share/xsessions/*.desktop /usr/share/wayland-sessions/*.desktop; do' \
           --replace-fail \
+            '        function login(user, password, sessionIndex) {
+            pam.user = user;
+            pam.pendingPassword = password;
+            pam.start();
+        }' \
+            '        function login(user, password, sessionIndex) {
+            loginWithAction(user, password, sessionIndex, "");
+        }
+
+        function loginWithAction(user, password, sessionIndex, action) {
+            pam.user = user;
+            pam.pendingPassword = password;
+            pam.pendingAction = action || "";
+            pam.start();
+        }' \
+          --replace-fail \
             'function powerOff() { Quickshell.execDetached(["bash", "-c", "if [ -d /run/systemd/system ]; then systemctl poweroff; else loginctl poweroff; fi"]); }' \
             'function powerOff() { Quickshell.execDetached(["bash", "-c", "if [ -d /run/systemd/system ]; then systemctl poweroff; else loginctl poweroff; fi"]); }
         function suspend() { Quickshell.execDetached(["bash", "-c", "if [ -d /run/systemd/system ]; then systemctl suspend; else loginctl suspend; fi"]); }' \
           --replace-fail \
-            'PamContext {
-        id: pam' \
-            'PamContext {
+            '    PamContext {
         id: pam
-        config: "qylock"'
+        property string pendingPassword: ""' \
+            '    PamContext {
+        id: pam
+        config: "qylock"
+        property string pendingPassword: ""
+        property string pendingAction: ""' \
+          --replace-fail \
+            '        onCompleted: (result) => {
+            if (result === PamResult.Success) {
+                shim.sddm.loginSucceeded();
+                Quickshell.execDetached(["loginctl", "unlock-session"]);
+                // Notify success handlers
+            } else {
+                shim.sddm.loginFailed();
+            }
+        }' \
+            '        onCompleted: (result) => {
+            var action = pam.pendingAction;
+            pam.pendingAction = "";
+            if (result === PamResult.Success) {
+                if (action === "powerOff") {
+                    shim.sddm.powerOff();
+                } else if (action === "reboot") {
+                    shim.sddm.reboot();
+                } else {
+                    shim.sddm.loginSucceeded();
+                    Quickshell.execDetached(["loginctl", "unlock-session"]);
+                }
+            } else {
+                shim.sddm.loginFailed();
+            }
+        }'
 
         # Patch lock_shell.qml for X11 (oxwm):
         #  - Use X11BypassWindowManagerHint (override-redirect) when not in QS_TESTING mode
@@ -471,6 +517,10 @@ fi' \
   # ===== CachyOS kernel – BORE + ThinLTO (best pure AC performance) =====
   boot.kernelPackages = pkgs.cachyosKernels.linuxPackages-cachyos-bore-lto;
 
+  # options to disable initrd and console output
+  boot.consoleLogLevel = 0;
+  boot.initrd.verbose = false;
+
   boot.kernelParams = [
     # Force PCIe Active State Power Management (ASPM)
     "pcie_aspm=force"
@@ -484,6 +534,13 @@ fi' \
 
     "intel_pstate=active"
 
+    # silent boot
+    "quiet"
+    "splash"
+    "loglevel=3"
+    "rd.systemd.show_status=false"
+    "rd.udev.log_level=3"
+    "udev.log_priority=3"
   ];
 
   # Intel HDA audio codec power management (powers down audio chip after 1s silence)

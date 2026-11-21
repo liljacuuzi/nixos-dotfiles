@@ -57,8 +57,8 @@
     history_length = 20
 
     ### Misc ###
-    dmenu = /usr/bin/rofi -dmenu -p dunst
-    browser = /usr/bin/xdg-open
+    dmenu = rofi -dmenu -p dunst
+    browser = xdg-open
     always_run_script = true
     title = Dunst
     class = Dunst
@@ -66,8 +66,8 @@
     ignore_dbusclose = false
     force_xwayland = false
     force_xinerama = false
-    mouse_left_click = close_current
-    mouse_middle_click = do_action, close_current
+    mouse_left_click = do_action, close_current
+    mouse_middle_click = close_current
     mouse_right_click = close_all
 
 [urgency_low]
@@ -99,6 +99,10 @@
     highlight = "#7dcfff"    # progress bar matches the cyan accent
     timeout = 2
 
+[volume_muted]
+    category = volume-muted
+    format = "<b>%s</b> (muted)\n%b"
+
 [brightness]
     stack_tag = brightness
     background = "#1a1b26"
@@ -114,3 +118,7 @@
     frame_color = "#bb9af7"
     highlight = "#bb9af7"    # progress bar matches the purple accent
     timeout = 2
+
+[firefox]
+    appname = Firefox
+    timeout = 6

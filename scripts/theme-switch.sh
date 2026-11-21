@@ -153,6 +153,20 @@ fi
 echo "==> Updating running Neovim instances..."
 pkill -USR1 -x nvim 2>/dev/null || pkill -USR1 -x ".nvim-wrapped" 2>/dev/null || true
 
+echo "==> Updating running Yazi instances..."
+YAZI_PID_DIR="${XDG_RUNTIME_DIR:-/tmp}/yazi-matugen"
+if [ -d "$YAZI_PID_DIR" ]; then
+    for pidfile in "$YAZI_PID_DIR"/*; do
+        [ -e "$pidfile" ] || continue
+        ypid="$(basename "$pidfile")"
+        if kill -0 "$ypid" 2>/dev/null; then
+            kill -USR1 "$ypid" 2>/dev/null || true
+        else
+            rm -f "$pidfile"
+        fi
+    done
+fi
+
 echo "==> Updating Firefox..."
 # MatugenFox's native host (matugenfox_host.py) polls firefox_websites.css mtime every 2s
 [ -f "$HOME/.config/matugen/generated/firefox_websites.css" ] || true
@@ -163,6 +177,11 @@ true
 
 echo "==> Updating Anki..."
 touch "$CACHE_DIR/anki-reload" 2>/dev/null || true
+
+echo "==> Updating keyboard RGB..."
+if command -v oxwm-rgb-sync >/dev/null 2>&1; then
+    oxwm-rgb-sync sync >/dev/null 2>&1 || true
+fi
 
 echo "==> Updating PCManFM-Qt..."
 pcmanfm_running() {

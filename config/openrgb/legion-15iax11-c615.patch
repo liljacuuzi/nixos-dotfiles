@@ -1,0 +1,135 @@
+diff -ruN a/Controllers/LenovoControllers/LenovoDevices.h b/Controllers/LenovoControllers/LenovoDevices.h
+--- a/Controllers/LenovoControllers/LenovoDevices.h	2026-11-21 01:47:53.654539552 -0700
++++ b/Controllers/LenovoControllers/LenovoDevices.h	2026-11-21 01:47:53.655080340 -0700
+@@ -39,6 +39,7 @@
+ #define LEGION_7GEN9_H                          0xC998
+ #define LEGION_7GEN10                           0xC197
+ #define LEGION_5GEN10                           0xC195
++#define LEGION_5GEN11_1ZONE                     0xC615
+ 
+ enum LENOVO_KEYBOARD
+ {
+diff -ruN a/Controllers/LenovoControllers/LenovoUSBControllerDetect.cpp b/Controllers/LenovoControllers/LenovoUSBControllerDetect.cpp
+--- a/Controllers/LenovoControllers/LenovoUSBControllerDetect.cpp	2026-11-21 01:47:53.654707471 -0700
++++ b/Controllers/LenovoControllers/LenovoUSBControllerDetect.cpp	2026-11-21 01:47:53.655172210 -0700
+@@ -68,3 +68,4 @@
+ REGISTER_HID_DETECTOR_PU("Lenovo Legion 7 Gen 9",   DetectLenovoLegionUSBControllersGen7And8, ITE_VID, LEGION_7GEN9_H, LENOVO_PAGE, LENOVO_USAGE);
+ REGISTER_HID_DETECTOR_PU("Lenovo Legion 7 Gen 10",  DetectLenovoLegionUSBControllersGen7And8, ITE_VID, LEGION_7GEN10,  LENOVO_PAGE, LENOVO_USAGE);
+ REGISTER_HID_DETECTOR_PU("Lenovo Legion 5 Gen 10", DetectLenovoLegionUSBControllersGen7And8, ITE_VID, LEGION_5GEN10, LENOVO_PAGE, LENOVO_USAGE);
++REGISTER_HID_DETECTOR_PU("Lenovo Legion 5 Gen 11", DetectLenovoLegionUSBControllersGen7And8, ITE_VID, LEGION_5GEN11_1ZONE, LENOVO_PAGE, LENOVO_USAGE);
+diff -ruN a/Controllers/LenovoControllers/LenovoUSBController_Gen7_8/LenovoUSBController_Gen7_8.cpp b/Controllers/LenovoControllers/LenovoUSBController_Gen7_8/LenovoUSBController_Gen7_8.cpp
+--- a/Controllers/LenovoControllers/LenovoUSBController_Gen7_8/LenovoUSBController_Gen7_8.cpp	2026-11-21 01:47:53.654791372 -0700
++++ b/Controllers/LenovoControllers/LenovoUSBController_Gen7_8/LenovoUSBController_Gen7_8.cpp	2026-11-21 01:47:53.658355844 -0700
+@@ -17,7 +17,7 @@
+ 
+ static void SetGen10PayloadLength(uint16_t pid, uint8_t* buffer, uint16_t payload_length)
+ {
+-    if(pid != LEGION_7GEN10 && pid != LEGION_5GEN10)
++    if(pid != LEGION_7GEN10 && pid != LEGION_5GEN10 && pid != LEGION_5GEN11_1ZONE)
+     {
+         return;
+     }
+@@ -28,7 +28,7 @@
+ 
+ static bool UsesGen10PacketFormat(uint16_t pid)
+ {
+-    return pid == LEGION_7GEN10 || pid == LEGION_5GEN10;
++    return pid == LEGION_7GEN10 || pid == LEGION_5GEN10 || pid == LEGION_5GEN11_1ZONE;
+ }
+ 
+ LenovoGen7And8USBController::LenovoGen7And8USBController(hid_device* dev_handle, const char* path, uint16_t in_pid, std::string dev_name)
+diff -ruN a/Controllers/LenovoControllers/LenovoUSBController_Gen7_8/RGBController_Lenovo_Gen7_8.cpp b/Controllers/LenovoControllers/LenovoUSBController_Gen7_8/RGBController_Lenovo_Gen7_8.cpp
+--- a/Controllers/LenovoControllers/LenovoUSBController_Gen7_8/RGBController_Lenovo_Gen7_8.cpp	2026-11-21 01:47:53.654874413 -0700
++++ b/Controllers/LenovoControllers/LenovoUSBController_Gen7_8/RGBController_Lenovo_Gen7_8.cpp	2026-11-21 01:47:53.659187358 -0700
+@@ -15,7 +15,7 @@
+ 
+ static bool UsesGen10PacketFormat(uint16_t pid)
+ {
+-    return pid == LEGION_7GEN10 || pid == LEGION_5GEN10;
++    return pid == LEGION_7GEN10 || pid == LEGION_5GEN10 || pid == LEGION_5GEN11_1ZONE;
+ }
+ 
+ static bool Is24ZoneDevice(uint16_t pid)
+@@ -23,9 +23,14 @@
+     return pid == LEGION_5GEN10;
+ }
+ 
++static bool Is1ZoneDevice(uint16_t pid)
++{
++    return pid == LEGION_5GEN11_1ZONE;
++}
++
+ static bool IsKeyboardOnlyDevice(uint16_t pid)
+ {
+-    return pid == LEGION_5GEN10;
++    return pid == LEGION_5GEN10 || pid == LEGION_5GEN11_1ZONE;
+ }
+ 
+ static const lenovo_led legion_5gen10_24zone_leds[] =
+@@ -77,6 +82,24 @@
+     23,
+ };
+ 
++static const lenovo_led legion_5gen11_1zone_leds[] =
++{
++    {0x01, "Keyboard"},
++};
++
++static const lenovo_zone legion_5gen11_kbd_1zone =
++{
++    "Keyboard (1-zone)",
++    ZONE_TYPE_SINGLE,
++    0,
++    1,
++    1,
++    NULL,
++    legion_5gen11_1zone_leds,
++    0,
++    0,
++};
++
+ static const RGBColor legion_5gen10_zone_visualization_colors[24] =
+ {
+     0xFF0000, 0x00FFFF, 0xFFFF00, 0x0000FF, 0x00FF00, 0xFF00FF,
+@@ -211,7 +234,7 @@
+     Smooth.brightness = brightness;
+     modes.push_back(Smooth);
+ 
+-    if(!Is24ZoneDevice(controller->getPid()))
++    if(!Is24ZoneDevice(controller->getPid()) && !Is1ZoneDevice(controller->getPid()))
+     {
+         mode Rain;
+         Rain.name = "Rain";
+@@ -292,7 +315,7 @@
+     Static.brightness = brightness;
+     modes.push_back(Static);
+ 
+-    if(!Is24ZoneDevice(controller->getPid()))
++    if(!Is24ZoneDevice(controller->getPid()) && !Is1ZoneDevice(controller->getPid()))
+     {
+         mode Type;
+         Type.name = "Type Lighting";
+@@ -364,6 +387,10 @@
+     case LEGION_5GEN10:
+         description = "Lenovo Legion 5 Gen 10";
+         break;
++
++    case LEGION_5GEN11_1ZONE:
++        description = "Lenovo Legion 5 Gen 11 (1-zone)";
++        break;
+     }
+ 
+     brightness = controller->getCurrentBrightness();
+@@ -399,7 +426,11 @@
+ void LenovoRGBController_Gen7_8::SetupZones()
+ {
+     vector<lenovo_zone> lenovo_zones;
+-    if(Is24ZoneDevice(controller->getPid()))
++    if(Is1ZoneDevice(controller->getPid()))
++    {
++        lenovo_zones.push_back(legion_5gen11_kbd_1zone);
++    }
++    else if(Is24ZoneDevice(controller->getPid()))
+     {
+         lenovo_zones.push_back(legion_5gen10_kbd_24zone);
+     }

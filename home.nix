@@ -70,54 +70,91 @@ in
   home.homeDirectory = "/home/smalldog";
   home.stateVersion = "26.05";
     
-  programs.bash = {
+  programs.zsh = {
     enable = true;
+    enableCompletion = true;
+    autosuggestion.enable = true;
+    syntaxHighlighting.enable = true;
+
     shellAliases = {
       btw = "echo i use nixos btw";
-        nrs = "sudo nixos-rebuild switch --flake ~/nixos-dotfiles#nixos-laptop";
-        nrsu = "sudo nixos-rebuild switch --flake ~/nixos-dotfiles#nixos-laptop --upgrade";
-        sncgd = "sudo nix-collect-garbage -d";
-        ncg = "nix-collect-garbage";
-        displaypowersave = "PANEL=$(xrandr | awk '/eDP.*connected/ {print $1; exit}'); xrandr --output \"\${PANEL:-eDP-1}\" --mode 1920x1200 --rate 60 && (test -f ~/.fehbg && ~/.fehbg || feh --bg-scale ~/nixos-dotfiles/walls/1920x1200p/tokyo-text.png)";
-        displaybalanced = "PANEL=$(xrandr | awk '/eDP.*connected/ {print $1; exit}'); xrandr --output \"\${PANEL:-eDP-1}\" --mode 2560x1600 --rate 60 && (test -f ~/.fehbg && ~/.fehbg || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png)";
-        displayperformance = "PANEL=$(xrandr | awk '/eDP.*connected/ {print $1; exit}'); xrandr --output \"\${PANEL:-eDP-1}\" --mode 2560x1600 --rate 165 && (test -f ~/.fehbg && ~/.fehbg || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png)";
-        gamma = "xrandr --output eDP-1 --brightness";
-          
-        # restore nvim shellAliases
-        vi = "nvim";
-        vim = "nvim";
+      nrs = "sudo nixos-rebuild switch --flake \"$HOME/nixos-dotfiles#nixos-laptop\"";
+      nrsu = "sudo nixos-rebuild switch --flake \"$HOME/nixos-dotfiles#nixos-laptop\" --upgrade";
+      sncgd = "sudo nix-collect-garbage -d";
+      ncg = "nix-collect-garbage";
+      displaypowersave = "PANEL=$(xrandr | awk '/eDP.*connected/ {print $1; exit}'); xrandr --output \"\${PANEL:-eDP-1}\" --mode 1920x1200 --rate 60 && (test -f ~/.fehbg && ~/.fehbg || feh --bg-scale ~/nixos-dotfiles/walls/1920x1200p/tokyo-text.png)";
+      displaybalanced = "PANEL=$(xrandr | awk '/eDP.*connected/ {print $1; exit}'); xrandr --output \"\${PANEL:-eDP-1}\" --mode 2560x1600 --rate 60 && (test -f ~/.fehbg && ~/.fehbg || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png)";
+      displayperformance = "PANEL=$(xrandr | awk '/eDP.*connected/ {print $1; exit}'); xrandr --output \"\${PANEL:-eDP-1}\" --mode 2560x1600 --rate 165 && (test -f ~/.fehbg && ~/.fehbg || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png)";
+      gamma = "xrandr --output eDP-1 --brightness";
 
-        # printing support
-        cups-start  = "sudo systemctl start cups.socket cups.service && echo 'CUPS active'";
-        cups-stop   = "sudo systemctl stop cups.service cups.socket && echo 'CUPS stopped'";
-        cups-status = "systemctl status cups.service";
-        # battery conservation
-        batenable = "sudo legion_cli --donotexpecthwmon batteryconservation-enable";
-        batdisable = "sudo legion_cli --donotexpecthwmon batteryconservation-disable";
+      # restore nvim shellAliases
+      vi = "nvim";
+      vim = "nvim";
 
-        # Matugen theme switch shortcut
-        themeswitch = "$HOME/nixos-dotfiles/scripts/theme-switch.sh";
+      # printing support
+      cups-start  = "sudo systemctl start cups.socket cups.service && echo 'CUPS active'";
+      cups-stop   = "sudo systemctl stop cups.service cups.socket && echo 'CUPS stopped'";
+      cups-status = "systemctl status cups.service";
+      # battery conservation
+      batenable = "sudo legion_cli --donotexpecthwmon batteryconservation-enable";
+      batdisable = "sudo legion_cli --donotexpecthwmon batteryconservation-disable";
 
-        # Colorized shell output
-        ls = "ls --color=auto";
-        ll = "ls -lh --color=auto";
-        la = "ls -la --color=auto";
-        l = "ls -CF --color=auto";
-        grep = "grep --color=auto";
-        diff = "diff --color=auto";
-      };
-      
-    
+      # Matugen theme switch shortcut
+      themeswitch = "$HOME/nixos-dotfiles/scripts/theme-switch.sh";
+      yazi = "$HOME/nixos-dotfiles/scripts/yazi-matugen.sh";
 
-    initExtra = ''
+      # Colorized shell output
+      ls = "ls --color=auto";
+      ll = "ls -lh --color=auto";
+      la = "ls -la --color=auto";
+      l = "ls -CF --color=auto";
+      grep = "grep --color=auto";
+      diff = "diff --color=auto";
+    };
+
+    initContent = ''
       # Apply matugen Material You colors to every newly spawned terminal/shell
       [ -f "$HOME/.cache/matugen/sequences" ] && cat "$HOME/.cache/matugen/sequences"
       [ -f "$HOME/.cache/matugen/fzf-colors.sh" ] && . "$HOME/.cache/matugen/fzf-colors.sh"
       export BAT_THEME="Matugen"
 
       # Distinct file and directory colors using terminal ANSI palette
-      export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.zip=01;31:*.zst=01;31:*.7z=01;31:*.rar=01;31:*.gz=01;31:*.bz2=01;31:*.xz=01;31:*.png=01;35:*.jpg=01;35:*.jpeg=01;35:*.webp=01;35:*.gif=01;35:*.svg=01;35:*.bmp=01;35:*.ico=01;35:*.mp4=01;33:*.mkv=01;33:*.webm=01;33:*.avi=01;33:*.mov=01;33:*.mp3=00;36:*.flac=00;36:*.wav=00;36:*.ogg=00;36:*.m4a=00;36:*.opus=00;36:*.nix=01;36:*.lua=01;34:*.sh=01;32:*.bash=01;32:*.py=01;32:*.rs=01;31:*.go=01;36:*.c=01;33:*.h=01;33:*.cpp=01;33:*.js=01;33:*.ts=01;34:*.json=00;33:*.toml=00;33:*.yaml=00;33:*.yml=00;33:*.conf=00;36:*.rasi=00;36:*.pdf=01;31:*.md=01;37:*.txt=00;37:*~=00;90:*.bak=00;90:*.tmp=00;90:*.swp=00;90:*.lock=00;90:'
-      export PS1='\[\e[1;32m\]\u\[\e[0m\] in \[\e[1;34m\]\w\[\e[0m\] \\$ '
+      export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.zip=01;31:*.zst=01;31:*.7z=01;31:*.rar=01;31:*.gz=01;31:*.bz2=01;31:*.xz=01;31:*.png=01;35:*.jpg=01;35:*.jpeg=01;35:*.webp=01;35:*.gif=01;35:*.svg=01;35:*.bmp=01;35:*.ico=01;35:*.mp4=01;33:*.mkv=01;33:*.webm=01;33:*.avi=01;33:*.mov=01;33:*.mp3=00;36:*.flac=00;36:*.wav=00;36:*.ogg=00;36:*.m4a=00;36:*.opus=00;36:*.nix=01;36:*.lua=01;34:*.sh=01;32:*.bash=01;32:*.zsh=01;32:*.py=01;32:*.rs=01;31:*.go=01;36:*.c=01;33:*.h=01;33:*.cpp=01;33:*.js=01;33:*.ts=01;34:*.json=00;33:*.toml=00;33:*.yaml=00;33:*.yml=00;33:*.conf=00;36:*.rasi=00;36:*.pdf=01;31:*.md=01;37:*.txt=00;37:*~=00;90:*.bak=00;90:*.tmp=00;90:*.swp=00;90:*.lock=00;90:'
+      zstyle ':completion:*' list-colors "''${(s.:.)LS_COLORS}"
+
+      PROMPT='%B%F{green}%n%f%b in %B%F{blue}%~%f%b %(!.#.$) '
+
+      setopt PROMPT_SUBST
+      autoload -Uz vcs_info add-zsh-hook
+      zstyle ':vcs_info:*' enable git
+      zstyle ':vcs_info:*' check-for-changes true
+      zstyle ':vcs_info:*' unstagedstr '*'
+      zstyle ':vcs_info:*' stagedstr '+'
+      zstyle ':vcs_info:git:*' formats '%F{yellow}(%b%u%c)%f'
+      zstyle ':vcs_info:git:*' actionformats '%F{yellow}(%b|%a%u%c)%f'
+
+      # Timer + Git hooks
+      _prompt_preexec() { timer=''${timer:-$SECONDS} }
+      _prompt_precmd() {
+        vcs_info
+        cmd_time=""
+        if [[ -n "''${timer:-}" ]]; then
+          local timer_show=$(( SECONDS - timer ))
+          if (( timer_show >= 3 )); then
+            cmd_time="%F{cyan}''${timer_show}s%f "
+          fi
+          unset timer
+        fi
+      }
+      add-zsh-hook preexec _prompt_preexec
+      add-zsh-hook precmd _prompt_precmd
+
+      nix_info() {
+        [[ -n "''${IN_NIX_SHELL:-}" ]] && echo "%F{blue}[nix]%f "
+      }
+
+      # Combines: [Exit Code] [Background Jobs] [Execution Time] [Nix Shell] (Git Branch*)
+      RPROMPT='%(?..%F{red}[%?]%f )%(1j.%F{magenta}[%jj]%f .)''${cmd_time}$(nix_info)''${vcs_info_msg_0_}'
     '';
   };
    
@@ -130,7 +167,6 @@ in
     rofi-power-menu
     localsend
     rofi
-    btop
     # required for pcmanfm-qt
     (symlinkJoin {
       name = "pcmanfm-qt";
@@ -150,9 +186,10 @@ in
     obsidian
     anki
     lutris
+    wineWow64Packages.stagingFull
     _7zz
     # antigravity-cli
-    inputs.antigravity-nix.packages.${pkgs.system}.google-antigravity-cli
+    inputs.antigravity-nix.packages.${pkgs.stdenv.hostPlatform.system}.google-antigravity-cli
     matugen
     xdotool
     xsettingsd

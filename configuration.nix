@@ -212,7 +212,7 @@ fi' \
     #     and keymap state (XQueryKeymap) every 80ms; returns 0 immediately on
     #     any mouse movement or keypress, or 1 if timeout_ms elapses with no input.
     oxwm-lock-helpers = pkgs.runCommandCC "oxwm-lock-helpers" {
-      buildInputs = [ pkgs.xorg.libX11 ];
+      buildInputs = [ pkgs.libx11 ];
     } ''
       mkdir -p $out/bin
       cat << 'EOF' > oled_saver_win.c
@@ -499,6 +499,194 @@ fi' \
         ${pkgs.su}/bin/su - smalldog -c "DISPLAY=:0 XAUTHORITY=/home/smalldog/.Xauthority /home/smalldog/.fehbg" 2>/dev/null || true
       fi
     '';
+
+    # Focus Firefox across oxwm tags when a Firefox notification is clicked
+    oxwm-focus-firefox = pkgs.writeShellApplication {
+      name = "oxwm-focus-firefox";
+      runtimeInputs = with pkgs; [ xdotool xprop gawk coreutils ];
+      text = ''
+        ff_win=$(xdotool search --class "firefox" 2>/dev/null | head -n 1 || true)
+        if [ -z "$ff_win" ]; then
+          ff_win=$(xdotool search --class "Navigator" 2>/dev/null | head -n 1 || true)
+        fi
+        [ -n "$ff_win" ] || exit 0
+
+        # oxwm hides windows on inactive tags off-screen (X < 0); switch to tag 1 if hidden
+        X=0
+        eval "$(xdotool getwindowgeometry --shell "$ff_win" 2>/dev/null || true)"
+        if [ "''${X:-0}" -lt 0 ]; then
+          xdotool key --clearmodifiers super+1 2>/dev/null || true
+          sleep 0.05
+        fi
+
+        # Focus Firefox if another window on the tag currently has focus
+        active_hex=$(xprop -root _NET_ACTIVE_WINDOW 2>/dev/null | awk '{print $NF}' || true)
+        active_dec=0
+        if [[ "$active_hex" =~ ^0x[0-9a-fA-F]+$ ]]; then
+          active_dec=$(( active_hex ))
+        fi
+        if [ "$active_dec" != "$ff_win" ]; then
+          xdotool windowactivate "$ff_win" 2>/dev/null || true
+          xdotool windowfocus "$ff_win" 2>/dev/null || true
+        fi
+      '';
+    };
+
+    # Patched Dunst:
+    #  1. Converts Markdown (**bold**, *italic*, `code`, ~~strike~~, headings, bullets, links)
+    #     into Pango markup with pango_parse_markup() fallback validation.
+    #  2. Invokes oxwm-focus-firefox when a Firefox notification action is triggered so oxwm
+    #     switches to Firefox's tag while Firefox switches to the originating tab.
+    dunstPatched = pkgs.dunst.overrideAttrs (old: {
+      patches = (old.patches or []) ++ [ ./config/dunst/dunst-firefox-markdown.patch ];
+    });
+
+    # Patched OpenRGB: adds Lenovo Legion 5 Gen 11 (15IAX11, 048d:c615, 1-zone Spectrum)
+    # to LenovoUSBController_Gen7_8.
+    openrgbPatched = pkgs.openrgb.overrideAttrs (old: {
+      patches = (old.patches or []) ++ [ ./config/openrgb/legion-15iax11-c615.patch ];
+    });
+
+    # Sync Lenovo Legion keyboard RGB with Matugen primary color + screen brightness (AC only),
+    # or turn off on battery.
+    oxwm-rgb-sync = pkgs.writeShellApplication {
+      name = "oxwm-rgb-sync";
+      runtimeInputs = [ openrgbPatched pkgs.jq pkgs.gnugrep pkgs.gawk pkgs.xrandr pkgs.coreutils pkgs.systemd ];
+      text = ''
+        cmd="''${1:-sync}"
+        arg2="''${2:-}"
+        color_json="/home/smalldog/.cache/matugen/qylock-colors.json"
+
+        run_openrgb() {
+          if systemctl is-active --quiet openrgb.service 2>/dev/null; then
+            openrgb "$@" >/dev/null 2>&1
+          else
+            openrgb --noautoconnect "$@" >/dev/null 2>&1
+          fi
+        }
+
+        get_screen_brightness() {
+          local out curr pct
+          out="$(DISPLAY="''${DISPLAY:-:0}" XAUTHORITY="''${XAUTHORITY:-/home/smalldog/.Xauthority}" \
+            xrandr 2>/dev/null | awk '/eDP.*connected/ {print $1; exit}' || true)"
+          out="''${out:-eDP-1}"
+          curr="$(DISPLAY="''${DISPLAY:-:0}" XAUTHORITY="''${XAUTHORITY:-/home/smalldog/.Xauthority}" \
+            xrandr --verbose --current 2>/dev/null | awk -v o="$out" '
+              $0 ~ "^" o " " { found = 1 }
+              found && /Brightness:/ { print $2; exit }
+            ' || true)"
+          if [ -z "$curr" ]; then
+            echo "50"
+            return
+          fi
+          pct="$(awk -v b="$curr" 'BEGIN {
+            p = int(b * 100 + 0.5)
+            if (p < 0) p = 0
+            if (p > 100) p = 100
+            if (p > 0 && p < 12) p = 12
+            print p
+          }')"
+          echo "$pct"
+        }
+
+        # Boost saturation and apply LED gamma (1.8) so Material You dark-mode
+        # pastels render with vivid, true hue on linear physical RGB LEDs.
+        vivid_led_hex() {
+          awk -v hex="$1" 'BEGIN {
+            r = strtonum("0x" substr(hex, 1, 2)) / 255.0
+            g = strtonum("0x" substr(hex, 3, 2)) / 255.0
+            b = strtonum("0x" substr(hex, 5, 2)) / 255.0
+
+            maxc = r; if (g > maxc) maxc = g; if (b > maxc) maxc = b
+            minc = r; if (g < minc) minc = g; if (b < minc) minc = b
+            delta = maxc - minc
+            s = (maxc == 0) ? 0 : (delta / maxc)
+
+            if (s <= 0.02) {
+              print "FFFFFF"
+              exit
+            }
+
+            if (maxc == r) {
+              h = (g - b) / delta
+              if (h < 0) h += 6.0
+            } else if (maxc == g) {
+              h = 2.0 + (b - r) / delta
+            } else {
+              h = 4.0 + (r - g) / delta
+            }
+
+            s = s * 1.8
+            if (s < 0.80) s = 0.80
+            if (s > 1.0) s = 1.0
+            v = 1.0
+
+            hi = int(h) % 6
+            f = h - int(h)
+            p = v * (1.0 - s)
+            q = v * (1.0 - f * s)
+            t = v * (1.0 - (1.0 - f) * s)
+
+            if (hi == 0)      { r1 = v; g1 = t; b1 = p }
+            else if (hi == 1) { r1 = q; g1 = v; b1 = p }
+            else if (hi == 2) { r1 = p; g1 = v; b1 = t }
+            else if (hi == 3) { r1 = p; g1 = q; b1 = v }
+            else if (hi == 4) { r1 = t; g1 = p; b1 = v }
+            else              { r1 = v; g1 = p; b1 = q }
+
+            r2 = int((r1 ^ 1.8) * 255.0 + 0.5)
+            g2 = int((g1 ^ 1.8) * 255.0 + 0.5)
+            b2 = int((b1 ^ 1.8) * 255.0 + 0.5)
+            printf "%02X%02X%02X\n", r2, g2, b2
+          }'
+        }
+
+        if [ "$cmd" = "off" ]; then
+          run_openrgb -d 0 -b 0 || true
+          exit 0
+        fi
+
+        # Respect battery power-saving: never turn RGB on while unplugged
+        if grep -q '^0$' /sys/class/power_supply/{AC*,ADP*}/online 2>/dev/null; then
+          exit 0
+        fi
+
+        if [ "$cmd" = "brightness" ]; then
+          pct="''${arg2:-$(get_screen_brightness)}"
+          pct="$(awk -v p="$pct" 'BEGIN {
+            v = int(p + 0.5)
+            if (v < 0) v = 0
+            if (v > 100) v = 100
+            if (v > 0 && v < 12) v = 12
+            print v
+          }')"
+          run_openrgb -d 0 -b "$pct" || true
+          exit 0
+        fi
+
+        hex="7aa2f7"
+        if [ -f "$color_json" ]; then
+          parsed="$(jq -r '.primary // empty' "$color_json" 2>/dev/null | tr -d '#' || true)"
+          if [[ "$parsed" =~ ^[0-9A-Fa-f]{6}$ ]]; then
+            hex="$parsed"
+          fi
+        fi
+        led_hex="$(vivid_led_hex "$hex")"
+        bright_pct="$(get_screen_brightness)"
+
+        # If openrgb.service was just started (e.g. ac-mode), wait briefly for SDK server readiness
+        if systemctl is-active --quiet openrgb.service 2>/dev/null; then
+          for _ in 1 2 3 4 5 6; do
+            if openrgb --list-devices 2>/dev/null | grep -q '0: Lenovo Legion'; then
+              break
+            fi
+            sleep 0.5
+          done
+        fi
+
+        run_openrgb -d 0 -m Static -c "$led_hex" -b "$bright_pct" || true
+      '';
+    };
     in
 
  
@@ -519,7 +707,6 @@ fi' \
 
   # options to disable initrd and console output
   boot.consoleLogLevel = 0;
-  boot.initrd.verbose = false;
 
   boot.kernelParams = [
     # Force PCIe Active State Power Management (ASPM)
@@ -786,9 +973,13 @@ services.picom = {
   # fixing bug with not being able to write to files in home directory
   security.polkit.enable = true;
 
+  # Enable Zsh system-wide (registers in /etc/shells and sets up /etc/zshrc & /etc/zprofile)
+  programs.zsh.enable = true;
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.smalldog = {
     isNormalUser = true;
+    shell = pkgs.zsh;
     initialPassword = "changeme";
     extraGroups = [ "wheel" "video" "audio" "networkmanager" "i2c" ]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
@@ -832,7 +1023,8 @@ services.picom = {
     slop
     maim
     # required for notifications
-    dunst
+    dunstPatched
+    oxwm-focus-firefox
     libnotify
     # required for pcmanfm-qt
     lxmenu-data
@@ -854,13 +1046,25 @@ services.picom = {
     jq
     # legion tools
     lenovo-legion
-    openrgb
+    openrgbPatched
+    oxwm-rgb-sync
     lm_sensors
     # manage app images (ankiengine)
     gearlever
     # system-wide icon theme
     papirus-icon-theme
+    # resource monitor with NVIDIA NVML RUNPATH (wrapped with cap_perfmon below)
+    btop-cuda
   ];
+
+  # Grant CAP_PERFMON to btop so Intel iGPU PMU (i915 + power RAPL) works without sudo
+  security.wrappers.btop = {
+    owner = "root";
+    group = "wheel";
+    permissions = "u+rx,g+x";
+    capabilities = "cap_perfmon+ep";
+    source = "${pkgs.btop-cuda}/bin/btop";
+  };
 
   programs.yazi = {
     plugins = {
@@ -869,7 +1073,10 @@ services.picom = {
   };
 
   # Enable OpenRGB service for hardware control
-  services.hardware.openrgb.enable = true;
+  services.hardware.openrgb = {
+    enable = true;
+    package = openrgbPatched;
+  };
 
   # Enable I2C access for OpenRGB
   hardware.i2c.enable = true;
@@ -883,6 +1090,9 @@ services.picom = {
     };
     script = ''
       ${pkgs.util-linux}/bin/rfkill block bluetooth || true
+
+      # Turn off keyboard RGB before stopping OpenRGB to save battery
+      ${oxwm-rgb-sync}/bin/oxwm-rgb-sync off || true
 
       ${pkgs.systemd}/bin/systemctl --no-block stop \
         bluetooth.service \
@@ -909,8 +1119,11 @@ services.picom = {
 
       ${pkgs.systemd}/bin/systemctl --no-block start \
         bluetooth.service \
+        openrgb.service \
         syncthing.service \
         tailscaled.service || true
+
+      ${oxwm-rgb-sync}/bin/oxwm-rgb-sync sync --restore || true
 
       DISPLAY=:0 ${oxwm-battery-rate}/bin/oxwm-battery-rate 165
     '';

@@ -5,6 +5,7 @@ overall = {}
 
 [mgr]
 cwd = { fg = "{{ colors.primary.default.hex }}" }
+syntect_theme = "~/.cache/matugen/bat.tmTheme"
 
 # Find
 find_keyword  = { fg = "{{ colors.error.default.hex }}", bold = true, italic = true, underline = true }

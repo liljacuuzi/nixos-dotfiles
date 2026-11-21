@@ -36,20 +36,17 @@ let
           exit 1
           ;;
       esac
-      vol=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}')
-      muted=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -o "MUTED" || true)
-      if [ "$muted" = "MUTED" ]; then
-         notify-send \
-          -h string:x-dunst-stack-tag:volume \
-          -h int:value:"$vol" \
-          "Volume" "$vol%" &    
-      else
-       # volume example (do the same pattern for the other two)
-        dunstify -a "volume" -r 9991 -t 1500 -u low \
+      out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)
+      vol=$(awk '{print int($2 * 100 + 0.5)}' <<< "$out")
+      category="volume"
+      if [[ "$out" == *"[MUTED]"* ]]; then
+        category="volume-muted"
+      fi
+
+      dunstify -a "volume" -c "$category" -r 9991 -t 1500 -u low \
         -h string:x-dunst-stack-tag:volume \
         -h int:value:"$vol" \
         "Volume" "$vol%"
-      fi
     '';
   };
 
@@ -115,6 +112,11 @@ let
 
       # Integer percent for the notification (same logic as before)
       bright=$(awk -v b="$new" 'BEGIN { print int(b * 100 + 0.5) }')
+
+      # Sync keyboard RGB brightness to screen brightness (non-blocking, AC only)
+      if [ -x /run/current-system/sw/bin/oxwm-rgb-sync ]; then
+        /run/current-system/sw/bin/oxwm-rgb-sync brightness "$bright" >/dev/null 2>&1 &
+      fi
 
       # Exactly the same dunstify call you already had
       dunstify -a "brightness" -r 9991 -t 1500 -u low \

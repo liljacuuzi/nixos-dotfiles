@@ -64,8 +64,8 @@
     ignore_dbusclose = false
     force_xwayland = false
     force_xinerama = false
-    mouse_left_click = close_current
-    mouse_middle_click = do_action, close_current
+    mouse_left_click = do_action, close_current
+    mouse_middle_click = close_current
     mouse_right_click = close_all
 
 [urgency_low]
@@ -97,6 +97,10 @@
     highlight = "{{ colors.primary.default.hex }}"
     timeout = 2
 
+[volume_muted]
+    category = volume-muted
+    format = "<b>%s</b> (muted)\n%b"
+
 [brightness]
     stack_tag = brightness
     background = "{{ colors.surface_container.default.hex }}"
@@ -112,3 +116,7 @@
     frame_color = "{{ colors.tertiary.default.hex }}"
     highlight = "{{ colors.tertiary.default.hex }}"
     timeout = 2
+
+[firefox]
+    appname = Firefox
+    timeout = 6

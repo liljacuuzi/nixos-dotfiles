@@ -1,0 +1,396 @@
+diff -ruN a/src/markup.c b/src/markup.c
+--- a/src/markup.c	2026-11-21 01:11:14.334050448 -0700
++++ b/src/markup.c	2026-11-21 01:11:14.339571360 -0700
+@@ -11,6 +11,7 @@
+ #include <stdbool.h>
+ #include <stdio.h>
+ #include <string.h>
++#include <pango/pango.h>
+ 
+ #include "markup.h"
+ #include "log.h"
+@@ -310,6 +311,279 @@
+         return str;
+ }
+ 
++/**
++ * Find closing markdown delimiter (e.g. "***", "**", "*", "~~", "__", "_")
++ * within s[start..len), skipping existing XML/Pango tags and backslash escapes.
++ */
++static ssize_t md_find_closing(const char *s, size_t len, size_t start,
++                               const char *delim, size_t dlen, bool word_boundary)
++{
++        for (size_t i = start; i + dlen <= len; i++) {
++                if (s[i] == '\\' && i + 1 < len) {
++                        i++;
++                        continue;
++                }
++                if (s[i] == '<') {
++                        const char *gt = memchr(s + i, '>', len - i);
++                        if (gt) {
++                                i = (size_t)(gt - s);
++                                continue;
++                        }
++                }
++                if (memcmp(s + i, delim, dlen) == 0) {
++                        /* Avoid matching ** when searching for single * */
++                        if (dlen == 1 && (delim[0] == '*' || delim[0] == '_')) {
++                                if (i + 1 < len && s[i + 1] == delim[0]) {
++                                        i++;
++                                        continue;
++                                }
++                        }
++                        /* Closing delimiter cannot be preceded by whitespace */
++                        if (i > start && !isspace((unsigned char)s[i - 1])) {
++                                if (word_boundary && i + dlen < len &&
++                                    isalnum((unsigned char)s[i + dlen])) {
++                                        continue;
++                                }
++                                return (ssize_t)i;
++                        }
++                }
++        }
++        return -1;
++}
++
++/**
++ * Convert inline Markdown syntax within a single line into Pango markup.
++ * Preserves existing XML/Pango tags (<...>) and entities (&...;).
++ */
++static void md_append_inline(GString *out, const char *s, size_t len)
++{
++        size_t i = 0;
++        while (i < len) {
++                /* Preserve existing XML/Pango tags verbatim */
++                if (s[i] == '<') {
++                        const char *gt = memchr(s + i, '>', len - i);
++                        if (gt) {
++                                size_t tlen = (size_t)(gt - (s + i)) + 1;
++                                g_string_append_len(out, s + i, (gssize)tlen);
++                                i += tlen;
++                                continue;
++                        }
++                }
++
++                /* Backslash escape for common Markdown punctuation */
++                if (s[i] == '\\' && i + 1 < len &&
++                    strchr("*_`~[]\\", s[i + 1]) != NULL) {
++                        g_string_append_c(out, s[i + 1]);
++                        i += 2;
++                        continue;
++                }
++
++                /* Inline code: `code` -> <tt>code</tt> */
++                if (s[i] == '`') {
++                        const char *end = memchr(s + i + 1, '`', len - (i + 1));
++                        if (end && end > s + i + 1) {
++                                g_string_append(out, "<tt>");
++                                g_string_append_len(out, s + i + 1,
++                                                    (gssize)(end - (s + i + 1)));
++                                g_string_append(out, "</tt>");
++                                i = (size_t)(end - s) + 1;
++                                continue;
++                        }
++                }
++
++                /* Markdown link: [label](url) -> <u>label</u> */
++                if (s[i] == '[') {
++                        const char *mid = NULL;
++                        for (size_t j = i + 1; j + 1 < len; j++) {
++                                if (s[j] == ']' && s[j + 1] == '(') {
++                                        mid = s + j;
++                                        break;
++                                }
++                        }
++                        if (mid && mid > s + i + 1) {
++                                const char *url_start = mid + 2;
++                                const char *close_p = memchr(url_start, ')',
++                                                             len - (size_t)(url_start - s));
++                                if (close_p && close_p > url_start &&
++                                    memchr(url_start, ' ', (size_t)(close_p - url_start)) == NULL) {
++                                        g_string_append(out, "<u>");
++                                        md_append_inline(out, s + i + 1,
++                                                         (size_t)(mid - (s + i + 1)));
++                                        g_string_append(out, "</u>");
++                                        i = (size_t)(close_p - s) + 1;
++                                        continue;
++                                }
++                        }
++                }
++
++                /* Bold + Italic: ***text*** -> <b><i>text</i></b> */
++                if (i + 3 < len && s[i] == '*' && s[i + 1] == '*' && s[i + 2] == '*' &&
++                    !isspace((unsigned char)s[i + 3])) {
++                        ssize_t close = md_find_closing(s, len, i + 3, "***", 3, false);
++                        if (close > (ssize_t)(i + 3)) {
++                                g_string_append(out, "<b><i>");
++                                md_append_inline(out, s + i + 3, (size_t)close - (i + 3));
++                                g_string_append(out, "</i></b>");
++                                i = (size_t)close + 3;
++                                continue;
++                        }
++                }
++
++                /* Bold: **text** -> <b>text</b> */
++                if (i + 2 < len && s[i] == '*' && s[i + 1] == '*' &&
++                    !isspace((unsigned char)s[i + 2])) {
++                        ssize_t close = md_find_closing(s, len, i + 2, "**", 2, false);
++                        if (close > (ssize_t)(i + 2)) {
++                                g_string_append(out, "<b>");
++                                md_append_inline(out, s + i + 2, (size_t)close - (i + 2));
++                                g_string_append(out, "</b>");
++                                i = (size_t)close + 2;
++                                continue;
++                        }
++                }
++
++                /* Bold: __text__ (word-boundary guarded) -> <b>text</b> */
++                if (i + 2 < len && s[i] == '_' && s[i + 1] == '_' &&
++                    !isspace((unsigned char)s[i + 2]) &&
++                    (i == 0 || !isalnum((unsigned char)s[i - 1]))) {
++                        ssize_t close = md_find_closing(s, len, i + 2, "__", 2, true);
++                        if (close > (ssize_t)(i + 2)) {
++                                g_string_append(out, "<b>");
++                                md_append_inline(out, s + i + 2, (size_t)close - (i + 2));
++                                g_string_append(out, "</b>");
++                                i = (size_t)close + 2;
++                                continue;
++                        }
++                }
++
++                /* Italic: *text* -> <i>text</i> */
++                if (i + 1 < len && s[i] == '*' && s[i + 1] != '*' &&
++                    !isspace((unsigned char)s[i + 1])) {
++                        ssize_t close = md_find_closing(s, len, i + 1, "*", 1, false);
++                        if (close > (ssize_t)(i + 1)) {
++                                g_string_append(out, "<i>");
++                                md_append_inline(out, s + i + 1, (size_t)close - (i + 1));
++                                g_string_append(out, "</i>");
++                                i = (size_t)close + 1;
++                                continue;
++                        }
++                }
++
++                /* Italic: _text_ (word-boundary guarded) -> <i>text</i> */
++                if (i + 1 < len && s[i] == '_' && s[i + 1] != '_' &&
++                    !isspace((unsigned char)s[i + 1]) &&
++                    (i == 0 || !isalnum((unsigned char)s[i - 1]))) {
++                        ssize_t close = md_find_closing(s, len, i + 1, "_", 1, true);
++                        if (close > (ssize_t)(i + 1)) {
++                                g_string_append(out, "<i>");
++                                md_append_inline(out, s + i + 1, (size_t)close - (i + 1));
++                                g_string_append(out, "</i>");
++                                i = (size_t)close + 1;
++                                continue;
++                        }
++                }
++
++                /* Strikethrough: ~~text~~ -> <s>text</s> */
++                if (i + 2 < len && s[i] == '~' && s[i + 1] == '~' &&
++                    !isspace((unsigned char)s[i + 2])) {
++                        ssize_t close = md_find_closing(s, len, i + 2, "~~", 2, false);
++                        if (close > (ssize_t)(i + 2)) {
++                                g_string_append(out, "<s>");
++                                md_append_inline(out, s + i + 2, (size_t)close - (i + 2));
++                                g_string_append(out, "</s>");
++                                i = (size_t)close + 2;
++                                continue;
++                        }
++                }
++
++                g_string_append_c(out, s[i]);
++                i++;
++        }
++}
++
++char *markup_markdown_to_pango(char *str)
++{
++        ASSERT_OR_RET(str, NULL);
++
++        /* Fast path: skip allocation if no Markdown indicators are present */
++        if (strpbrk(str, "*_`~#[-+\\") == NULL)
++                return str;
++
++        GString *out = g_string_sized_new(strlen(str) + 32);
++        bool in_code_block = false;
++        bool first_line = true;
++        const char *p = str;
++
++        while (*p) {
++                const char *nl = strchr(p, '\n');
++                size_t llen = nl ? (size_t)(nl - p) : strlen(p);
++
++                /* Count leading spaces */
++                size_t indent = 0;
++                while (indent < llen && (p[indent] == ' ' || p[indent] == '\t'))
++                        indent++;
++
++                /* Fenced code blocks: ``` */
++                if (llen - indent >= 3 && memcmp(p + indent, "```", 3) == 0) {
++                        in_code_block = !in_code_block;
++                        p = nl ? nl + 1 : p + llen;
++                        continue;
++                }
++
++                if (!first_line)
++                        g_string_append_c(out, '\n');
++                first_line = false;
++
++                if (in_code_block) {
++                        g_string_append(out, "<tt>");
++                        g_string_append_len(out, p, (gssize)llen);
++                        g_string_append(out, "</tt>");
++                } else {
++                        const char *ls = p + indent;
++                        size_t rem = llen - indent;
++
++                        /* Headings: # .. ###### followed by space */
++                        size_t hashes = 0;
++                        while (hashes < rem && hashes < 6 && ls[hashes] == '#')
++                                hashes++;
++                        if (hashes > 0 && hashes < rem &&
++                            (ls[hashes] == ' ' || ls[hashes] == '\t')) {
++                                size_t hstart = hashes;
++                                while (hstart < rem &&
++                                       (ls[hstart] == ' ' || ls[hstart] == '\t'))
++                                        hstart++;
++                                g_string_append(out, "<b>");
++                                md_append_inline(out, ls + hstart, rem - hstart);
++                                g_string_append(out, "</b>");
++                        } else if (rem >= 2 &&
++                                   (ls[0] == '*' || ls[0] == '-' || ls[0] == '+') &&
++                                   (ls[1] == ' ' || ls[1] == '\t')) {
++                                /* Unordered list bullet -> Unicode bullet */
++                                g_string_append_len(out, p, (gssize)indent);
++                                g_string_append(out, "\xe2\x80\xa2 ");
++                                size_t bstart = 1;
++                                while (bstart < rem &&
++                                       (ls[bstart] == ' ' || ls[bstart] == '\t'))
++                                        bstart++;
++                                md_append_inline(out, ls + bstart, rem - bstart);
++                        } else {
++                                md_append_inline(out, p, llen);
++                        }
++                }
++
++                p = nl ? nl + 1 : p + llen;
++        }
++
++        /* Safety net: only accept converted markup if Pango validates it */
++        if (pango_parse_markup(out->str, -1, 0, NULL, NULL, NULL, NULL)) {
++                g_free(str);
++                return g_string_free(out, FALSE);
++        }
++
++        g_string_free(out, TRUE);
++        return str;
++}
++
+ char *markup_transform(char *str, enum markup_mode markup_mode)
+ {
+         ASSERT_OR_RET(str, NULL);
+@@ -332,6 +606,7 @@
+                 str = markup_br2nl(str);
+                 markup_strip_a(&str, NULL);
+                 markup_strip_img(&str, NULL);
++                str = markup_markdown_to_pango(str);
+                 break;
+         }
+ 
+diff -ruN a/src/markup.h b/src/markup.h
+--- a/src/markup.h	2026-11-21 01:11:14.334927726 -0700
++++ b/src/markup.h	2026-11-21 01:11:14.340571393 -0700
+@@ -51,6 +51,13 @@
+ void markup_strip_img(char **str, char **urls);
+ 
+ /**
++ * Convert common Markdown syntax (bold, italic, inline code, headings,
++ * bullets, strikethrough, links) into Pango markup, falling back to the
++ * original string if Pango rejects the result.
++ */
++char *markup_markdown_to_pango(char *str);
++
++/**
+  * Transform the string in accordance with `markup_mode` and
+  * `settings.ignore_newline`
+  */
+diff -ruN a/src/notification.c b/src/notification.c
+--- a/src/notification.c	2026-11-21 01:11:14.335836739 -0700
++++ b/src/notification.c	2026-11-21 01:11:14.342571460 -0700
+@@ -591,13 +591,17 @@
+                                 n->appname,
+                                 MARKUP_NO);
+                         break;
+-                case 's':
+-                        notification_replace_single_field(
+-                                &n->msg,
+-                                &substr,
+-                                n->summary,
+-                                MARKUP_NO);
++                case 's': {
++                        int pos = substr - n->msg;
++                        char *input = markup_transform(g_strdup(n->summary), MARKUP_NO);
++                        if (n->markup == MARKUP_FULL) {
++                                input = markup_markdown_to_pango(input);
++                        }
++                        n->msg = string_replace_at(n->msg, pos, 2, input);
++                        substr = n->msg + pos + strlen(input);
++                        g_free(input);
+                         break;
++                }
+                 case 'b':
+                         notification_replace_single_field(
+                                 &n->msg,
+@@ -766,6 +770,28 @@
+         n->text_to_render = buf;
+ }
+ 
++static bool notification_is_firefox(const struct notification *n)
++{
++        if (n->appname && g_ascii_strncasecmp(n->appname, "firefox", 7) == 0)
++                return true;
++        if (n->desktop_entry && g_strstr_len(n->desktop_entry, -1, "firefox") != NULL)
++                return true;
++        return false;
++}
++
++static void notification_focus_firefox(const struct notification *n)
++{
++        if (!notification_is_firefox(n))
++                return;
++
++        GError *err = NULL;
++        if (!g_spawn_command_line_async("oxwm-focus-firefox", &err)) {
++                LOG_W("Unable to run oxwm-focus-firefox: %s",
++                      err ? err->message : "unknown");
++                g_clear_error(&err);
++        }
++}
++
+ void notification_do_action(struct notification *n)
+ {
+         assert(n->default_action_name);
+@@ -773,12 +799,14 @@
+         if (g_hash_table_size(n->actions)) {
+                 if (g_hash_table_contains(n->actions, n->default_action_name)) {
+                         signal_action_invoked(n, n->default_action_name);
++                        notification_focus_firefox(n);
+                         return;
+                 }
+                 if (strcmp(n->default_action_name, "default") == 0 && g_hash_table_size(n->actions) == 1) {
+                         GList *keys = g_hash_table_get_keys(n->actions);
+                         signal_action_invoked(n, keys->data);
+                         g_list_free(keys);
++                        notification_focus_firefox(n);
+                         return;
+                 }
+                 notification_open_context_menu(n);
+@@ -786,6 +814,8 @@
+         } else if (n->urls) {
+                 // Try urls otherwise
+                 notification_open_url(n);
++        } else if (notification_is_firefox(n)) {
++                notification_focus_firefox(n);
+         }
+ }
+ 

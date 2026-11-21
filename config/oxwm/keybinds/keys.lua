@@ -56,7 +56,7 @@ return function(modkey)
         oxwm.spawn({ "sh", "-c", "oxwm-lock" }))
 
     -- launch yazi as file manager
-    oxwm.key.bind({ modkey }, "E", oxwm.spawn({ "st -e yazi" }))
+    oxwm.key.bind({ modkey }, "E", oxwm.spawn({ "sh", "-c", "st -e ~/nixos-dotfiles/scripts/yazi-matugen.sh" }))
 
 
     -- Multi-monitor

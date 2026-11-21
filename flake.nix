@@ -64,9 +64,31 @@
       specialArgs = { inherit inputs; };
       modules = [
         # Overlays
-        ({ pkgs, ... }: {
-          nixpkgs.overlays = [
+        ({ lib, ... }: {
+          nixpkgs.overlays = lib.mkBefore [
             nix-cachyos-kernel.overlays.pinned
+            # Workaround: nixpkgs 26.11 added an X.Org-only patch inherited by xlibre-overlay
+            (_final: prev:
+              let
+                stripDamagePatch = drv: drv.overrideAttrs (old: {
+                  patches = builtins.filter
+                    (p: !(lib.hasSuffix "revert-damage-unlink-abi-break.patch" (toString p)))
+                    (old.patches or [ ]);
+                });
+              in
+              (lib.optionalAttrs (prev ? xorg-server) {
+                xorg-server = stripDamagePatch prev.xorg-server;
+              })
+              // (lib.optionalAttrs (prev ? xorg && prev.xorg ? xorgserver) {
+                xorg =
+                  if prev.xorg ? overrideScope then
+                    prev.xorg.overrideScope (_: prevXorg: {
+                      xorgserver = stripDamagePatch prevXorg.xorgserver;
+                    })
+                  else
+                    prev.xorg // { xorgserver = stripDamagePatch prev.xorg.xorgserver; };
+              })
+            )
           ];
         })
 

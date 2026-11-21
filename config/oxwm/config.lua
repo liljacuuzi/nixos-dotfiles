@@ -62,8 +62,8 @@ local blocks = {
         underline = false,
     }),
     oxwm.bar.block.shell({
-        format = " {}",
-        command = "wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}'",
+        format = "{}",
+        command = "~/nixos-dotfiles/scripts/volume-status.sh",
         interval = 1,
         color = block_color,
         underline = true,
@@ -79,6 +79,7 @@ local blocks = {
         interval = 5,
         color = block_color,
         underline = true,
+        click = "st -e btop"
     }),
     oxwm.bar.block.static({
         text = "│",
@@ -192,6 +193,7 @@ screen_lock.setup()
 -- oxwm.autostart("picom")
 -- Restore last matugen wallpaper and colors across reboots, with fallback
 oxwm.autostart(
-    "sh -c 'if [ -f ~/.cache/matugen/colors.lua ] && [ -f ~/.cache/matugen/wallpaper ]; then feh --bg-scale \"$(cat ~/.cache/matugen/wallpaper)\"; else ~/nixos-dotfiles/scripts/theme-switch.sh --restore || (test -f ~/.fehbg && ~/.fehbg) || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png; fi'")
-oxwm.autostart("dunst") -- make sure dunst is running for the notifications
+    "sh -c '[ -f ~/.cache/matugen/colors.Xresources ] && xrdb -merge ~/.cache/matugen/colors.Xresources; if [ -f ~/.cache/matugen/colors.lua ] && [ -f ~/.cache/matugen/wallpaper ]; then feh --bg-scale \"$(cat ~/.cache/matugen/wallpaper)\"; else ~/nixos-dotfiles/scripts/theme-switch.sh --restore || (test -f ~/.fehbg && ~/.fehbg) || feh --bg-scale ~/nixos-dotfiles/walls/2560x1600p/tokyo-text.png; fi'")
+oxwm.autostart(
+    "sh -c 'if [ -f ~/.cache/matugen/dunstrc ]; then exec dunst -config ~/.cache/matugen/dunstrc; else exec dunst; fi'") -- make sure dunst is running with matugen colors for notifications
 -- oxwm.autostart("nm-applet")
